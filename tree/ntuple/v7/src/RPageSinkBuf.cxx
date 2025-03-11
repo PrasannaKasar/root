@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <memory>
 
+using ROOT::Internal::MakeUninitArray;
+
 void ROOT::Experimental::Internal::RPageSinkBuf::RColumnBuf::DropBufferedPages()
 {
    fBufferedPages.clear();
@@ -86,7 +88,7 @@ const ROOT::Experimental::RNTupleDescriptor &ROOT::Experimental::Internal::RPage
 
 void ROOT::Experimental::Internal::RPageSinkBuf::InitImpl(RNTupleModel &model)
 {
-   ConnectFields(Internal::GetFieldZeroOfModel(model).GetSubFields(), 0U);
+   ConnectFields(Internal::GetFieldZeroOfModel(model).GetMutableSubfields(), 0U);
 
    fInnerModel = model.Clone();
    fInnerSink->Init(*fInnerModel);

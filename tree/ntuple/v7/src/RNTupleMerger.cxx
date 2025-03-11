@@ -40,6 +40,7 @@
 #include <vector>
 
 using ROOT::ENTupleColumnType;
+using ROOT::Internal::MakeUninitArray;
 using namespace ROOT::Experimental;
 using namespace ROOT::Experimental::Internal;
 
@@ -707,7 +708,7 @@ void RNTupleMerger::MergeCommonColumns(RClusterPool &clusterPool, const RCluster
       const auto &pages = clusterDesc.GetPageRange(columnId);
 
       RPageStorage::SealedPageSequence_t sealedPages;
-      sealedPages.resize(pages.fPageInfos.size());
+      sealedPages.resize(pages.GetPageInfos().size());
 
       // Each column range potentially has a distinct compression settings
       const auto colRangeCompressionSettings = clusterDesc.GetColumnRange(columnId).GetCompressionSettings().value();
@@ -729,7 +730,7 @@ void RNTupleMerger::MergeCommonColumns(RClusterPool &clusterPool, const RCluster
       // If the column range already has the right compression we don't need to allocate any new buffer, so we don't
       // bother reserving memory for them.
       if (needsResealing)
-         sealedPageData.fBuffers.resize(sealedPageData.fBuffers.size() + pages.fPageInfos.size());
+         sealedPageData.fBuffers.resize(sealedPageData.fBuffers.size() + pages.GetPageInfos().size());
 
       // If this column is deferred, we may need to fill "holes" until its real start. We fill any missing entry
       // with zeroes, like we do for extraDstColumns.
@@ -744,7 +745,7 @@ void RNTupleMerger::MergeCommonColumns(RClusterPool &clusterPool, const RCluster
 
       // Loop over the pages
       std::uint64_t pageIdx = 0;
-      for (const auto &pageInfo : pages.fPageInfos) {
+      for (const auto &pageInfo : pages.GetPageInfos()) {
          assert(pageIdx < sealedPages.size());
          assert(sealedPageData.fBuffers.size() == 0 || pageIdx < sealedPageData.fBuffers.size());
          assert(pageInfo.GetLocator().GetType() != RNTupleLocator::kTypePageZero);
@@ -815,14 +816,14 @@ void RNTupleMerger::MergeSourceClusters(RPageSource &source, std::span<const RCo
       // We need to figure out which columns are actually present in this cluster so we only merge their pages (the
       // missing columns are handled by synthesizing zero pages - see below).
       size_t nCommonColumnsInCluster = commonColumns.size();
-      do {
+      while (nCommonColumnsInCluster > 0) {
          // Since `commonColumns` is sorted by column input id, we can simply traverse it from the back and stop as
          // soon as we find a common column that appears in this cluster: we know that in that case all previous
          // columns must appear as well.
          if (clusterDesc.ContainsColumn(commonColumns[nCommonColumnsInCluster - 1].fInputId))
             break;
          --nCommonColumnsInCluster;
-      } while (nCommonColumnsInCluster > 0);
+      }
 
       // Convert columns to a ColumnSet for the ClusterPool query
       RCluster::ColumnSet_t commonColumnSet;
@@ -1095,6 +1096,9 @@ ROOT::RResult<void> RNTupleMerger::Merge(std::span<RPageSource *> sources, const
       auto columnInfos = GatherColumnInfos(descCmp, srcDescriptor.GetRef(), mergeData);
       MergeSourceClusters(*source, columnInfos.fCommonColumns, columnInfos.fExtraDstColumns, mergeData);
    } // end loop over sources
+
+   if (fDestination->GetNEntries() == 0)
+      Warning("RNTuple::Merge", "Output RNTuple '%s' has no entries.", fDestination->GetNTupleName().c_str());
 
    // Commit the output
    fDestination->CommitClusterGroup();

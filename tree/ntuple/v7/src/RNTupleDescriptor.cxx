@@ -273,7 +273,7 @@ std::uint64_t ROOT::Experimental::RClusterDescriptor::GetNBytesOnStorage() const
 {
    std::uint64_t nbytes = 0;
    for (const auto &pr : fPageRanges) {
-      for (const auto &pi : pr.second.fPageInfos) {
+      for (const auto &pi : pr.second.GetPageInfos()) {
          nbytes += pi.GetLocator().GetNBytesOnStorage();
       }
    }
@@ -415,8 +415,12 @@ ROOT::DescriptorId_t ROOT::Experimental::RNTupleDescriptor::FindClusterId(ROOT::
       const auto &clusterIds = GetClusterGroupDescriptor(fSortedClusterGroupIds[cgMidpoint]).GetClusterIds();
       R__ASSERT(!clusterIds.empty());
 
-      const auto firstElementInGroup =
-         GetClusterDescriptor(clusterIds.front()).GetColumnRange(physicalColumnId).GetFirstElementIndex();
+      const auto &clusterDesc = GetClusterDescriptor(clusterIds.front());
+      // this may happen if the RNTuple has an empty schema
+      if (!clusterDesc.ContainsColumn(physicalColumnId))
+         return ROOT::kInvalidDescriptorId;
+
+      const auto firstElementInGroup = clusterDesc.GetColumnRange(physicalColumnId).GetFirstElementIndex();
       if (firstElementInGroup > index) {
          // Look into the lower half of cluster groups
          R__ASSERT(cgMidpoint > 0);
@@ -940,7 +944,7 @@ ROOT::Experimental::Internal::RNTupleDescriptorBuilder::EnsureFieldExists(ROOT::
 ROOT::RResult<void> ROOT::Experimental::Internal::RNTupleDescriptorBuilder::EnsureValidDescriptor() const
 {
    // Reuse field name validity check
-   auto validName = ROOT::Experimental::Internal::EnsureValidNameForRNTuple(fDescriptor.GetName(), "Field");
+   auto validName = ROOT::Internal::EnsureValidNameForRNTuple(fDescriptor.GetName(), "Field");
    if (!validName) {
       return R__FORWARD_ERROR(validName);
    }
@@ -1062,7 +1066,7 @@ ROOT::Experimental::Internal::RFieldDescriptorBuilder::MakeDescriptor() const
    }
    // FieldZero is usually named "" and would be a false positive here
    if (fField.GetParentId() != ROOT::kInvalidDescriptorId) {
-      auto validName = ROOT::Experimental::Internal::EnsureValidNameForRNTuple(fField.GetFieldName(), "Field");
+      auto validName = ROOT::Internal::EnsureValidNameForRNTuple(fField.GetFieldName(), "Field");
       if (!validName) {
          return R__FORWARD_ERROR(validName);
       }

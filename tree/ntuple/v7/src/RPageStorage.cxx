@@ -42,6 +42,8 @@
 #include <unordered_map>
 #include <utility>
 
+using ROOT::Internal::MakeUninitArray;
+
 ROOT::Experimental::Internal::RPageStorage::RPageStorage(std::string_view name)
    : fMetrics(""), fPageAllocator(std::make_unique<RPageAllocatorHeap>()), fNTupleName(name)
 {
@@ -265,7 +267,7 @@ void ROOT::Experimental::Internal::RPageSource::UnzipClusterImpl(RCluster *clust
          const auto &pageRange = clusterDescriptor.GetPageRange(columnId);
          std::uint64_t pageNo = 0;
          std::uint64_t firstInPage = 0;
-         for (const auto &pi : pageRange.fPageInfos) {
+         for (const auto &pi : pageRange.GetPageInfos()) {
             auto onDiskPage = cluster->GetOnDiskPage(ROnDiskPage::Key{columnId, pageNo});
             RSealedPage sealedPage;
             sealedPage.SetNElements(pi.GetNElements());
@@ -321,7 +323,7 @@ void ROOT::Experimental::Internal::RPageSource::PrepareLoadCluster(
 
       const auto &pageRange = clusterDesc.GetPageRange(physicalColumnId);
       ROOT::NTupleSize_t pageNo = 0;
-      for (const auto &pageInfo : pageRange.fPageInfos) {
+      for (const auto &pageInfo : pageRange.GetPageInfos()) {
          if (pageInfo.GetLocator().GetType() == RNTupleLocator::kTypePageZero) {
             pageZeroMap.Register(
                ROnDiskPage::Key{physicalColumnId, pageNo},
@@ -665,7 +667,7 @@ bool ROOT::Experimental::Internal::RWritePageMemoryManager::TryUpdate(RColumn &c
 ROOT::Experimental::Internal::RPageSink::RPageSink(std::string_view name, const ROOT::RNTupleWriteOptions &options)
    : RPageStorage(name), fOptions(options.Clone()), fWritePageMemoryManager(options.GetPageBufferBudget())
 {
-   ROOT::Experimental::Internal::EnsureValidNameForRNTuple(name, "RNTuple").ThrowOnError();
+   ROOT::Internal::EnsureValidNameForRNTuple(name, "RNTuple").ThrowOnError();
 }
 
 ROOT::Experimental::Internal::RPageSink::~RPageSink() {}
@@ -877,7 +879,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::UpdateSchema(const RNTup
       columnRange.SetCompressionSettings(GetWriteOptions().GetCompression());
       fOpenColumnRanges.emplace_back(columnRange);
       RClusterDescriptor::RPageRange pageRange;
-      pageRange.fPhysicalColumnId = i;
+      pageRange.SetPhysicalColumnId(i);
       fOpenPageRanges.emplace_back(std::move(pageRange));
    }
 
@@ -908,17 +910,17 @@ void ROOT::Experimental::Internal::RPagePersistentSink::InitImpl(RNTupleModel &m
    projectedFields.GetFieldZero().SetOnDiskId(0);
 
    RNTupleModelChangeset initialChangeset{model};
-   initialChangeset.fAddedFields.reserve(fieldZero.GetSubFields().size());
-   for (auto f : fieldZero.GetSubFields())
+   initialChangeset.fAddedFields.reserve(fieldZero.GetMutableSubfields().size());
+   for (auto f : fieldZero.GetMutableSubfields())
       initialChangeset.fAddedFields.emplace_back(f);
-   initialChangeset.fAddedProjectedFields.reserve(projectedFields.GetFieldZero().GetSubFields().size());
-   for (auto f : projectedFields.GetFieldZero().GetSubFields())
+   initialChangeset.fAddedProjectedFields.reserve(projectedFields.GetFieldZero().GetMutableSubfields().size());
+   for (auto f : projectedFields.GetFieldZero().GetMutableSubfields())
       initialChangeset.fAddedProjectedFields.emplace_back(f);
    UpdateSchema(initialChangeset, 0U);
 
-   fSerializationContext = RNTupleSerializer::SerializeHeader(nullptr, descriptor);
+   fSerializationContext = RNTupleSerializer::SerializeHeader(nullptr, descriptor).Unwrap();
    auto buffer = MakeUninitArray<unsigned char>(fSerializationContext.GetHeaderSize());
-   fSerializationContext = RNTupleSerializer::SerializeHeader(buffer.get(), descriptor);
+   fSerializationContext = RNTupleSerializer::SerializeHeader(buffer.get(), descriptor).Unwrap();
    InitImpl(buffer.get(), fSerializationContext.GetHeaderSize());
 
    fDescriptorBuilder.BeginHeaderExtension();
@@ -946,7 +948,7 @@ ROOT::Experimental::Internal::RPagePersistentSink::InitFromDescriptor(const RNTu
       columnRange.SetCompressionSettings(GetWriteOptions().GetCompression());
       fOpenColumnRanges.emplace_back(columnRange);
       RClusterDescriptor::RPageRange pageRange;
-      pageRange.fPhysicalColumnId = i;
+      pageRange.SetPhysicalColumnId(i);
       fOpenPageRanges.emplace_back(std::move(pageRange));
    }
 
@@ -982,9 +984,9 @@ ROOT::Experimental::Internal::RPagePersistentSink::InitFromDescriptor(const RNTu
    }
 
    // Serialize header and init from it
-   fSerializationContext = RNTupleSerializer::SerializeHeader(nullptr, descriptor);
+   fSerializationContext = RNTupleSerializer::SerializeHeader(nullptr, descriptor).Unwrap();
    auto buffer = MakeUninitArray<unsigned char>(fSerializationContext.GetHeaderSize());
-   fSerializationContext = RNTupleSerializer::SerializeHeader(buffer.get(), descriptor);
+   fSerializationContext = RNTupleSerializer::SerializeHeader(buffer.get(), descriptor).Unwrap();
    InitImpl(buffer.get(), fSerializationContext.GetHeaderSize());
 
    fDescriptorBuilder.BeginHeaderExtension();
@@ -1008,7 +1010,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitPage(ColumnHandle_
    pageInfo.SetNElements(page.GetNElements());
    pageInfo.SetLocator(CommitPageImpl(columnHandle, page));
    pageInfo.SetHasChecksum(GetWriteOptions().GetEnablePageChecksums());
-   fOpenPageRanges.at(columnHandle.fPhysicalId).fPageInfos.emplace_back(pageInfo);
+   fOpenPageRanges.at(columnHandle.fPhysicalId).GetPageInfos().emplace_back(pageInfo);
 }
 
 void ROOT::Experimental::Internal::RPagePersistentSink::CommitSealedPage(ROOT::DescriptorId_t physicalColumnId,
@@ -1020,7 +1022,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitSealedPage(ROOT::D
    pageInfo.SetNElements(sealedPage.GetNElements());
    pageInfo.SetLocator(CommitSealedPageImpl(physicalColumnId, sealedPage));
    pageInfo.SetHasChecksum(sealedPage.GetHasChecksum());
-   fOpenPageRanges.at(physicalColumnId).fPageInfos.emplace_back(pageInfo);
+   fOpenPageRanges.at(physicalColumnId).GetPageInfos().emplace_back(pageInfo);
 }
 
 std::vector<ROOT::RNTupleLocator> ROOT::Experimental::Internal::RPagePersistentSink::CommitSealedPageVImpl(
@@ -1104,7 +1106,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitSealedPageV(
          pageInfo.SetNElements(sealedPageIt->GetNElements());
          pageInfo.SetLocator(locators[locatorIndexes[i++]]);
          pageInfo.SetHasChecksum(sealedPageIt->GetHasChecksum());
-         fOpenPageRanges.at(range.fPhysicalColumnId).fPageInfos.emplace_back(pageInfo);
+         fOpenPageRanges.at(range.fPhysicalColumnId).GetPageInfos().emplace_back(pageInfo);
       }
    }
 }
@@ -1120,15 +1122,15 @@ ROOT::Experimental::Internal::RPagePersistentSink::StageCluster(ROOT::NTupleSize
       RStagedCluster::RColumnInfo columnInfo;
       columnInfo.fCompressionSettings = fOpenColumnRanges[i].GetCompressionSettings().value();
       if (fOpenColumnRanges[i].IsSuppressed()) {
-         assert(fOpenPageRanges[i].fPageInfos.empty());
-         columnInfo.fPageRange.fPhysicalColumnId = i;
+         assert(fOpenPageRanges[i].GetPageInfos().empty());
+         columnInfo.fPageRange.SetPhysicalColumnId(i);
          columnInfo.fIsSuppressed = true;
          // We reset suppressed columns to the state they would have if they were active (not suppressed).
          fOpenColumnRanges[i].SetNElements(0);
          fOpenColumnRanges[i].SetIsSuppressed(false);
       } else {
          std::swap(columnInfo.fPageRange, fOpenPageRanges[i]);
-         fOpenPageRanges[i].fPhysicalColumnId = i;
+         fOpenPageRanges[i].SetPhysicalColumnId(i);
 
          columnInfo.fNElements = fOpenColumnRanges[i].GetNElements();
          fOpenColumnRanges[i].SetNElements(0);
@@ -1147,9 +1149,9 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitStagedClusters(std
          .FirstEntryIndex(fPrevClusterNEntries)
          .NEntries(cluster.fNEntries);
       for (const auto &columnInfo : cluster.fColumnInfos) {
-         const auto colId = columnInfo.fPageRange.fPhysicalColumnId;
+         const auto colId = columnInfo.fPageRange.GetPhysicalColumnId();
          if (columnInfo.fIsSuppressed) {
-            assert(columnInfo.fPageRange.fPageInfos.empty());
+            assert(columnInfo.fPageRange.GetPageInfos().empty());
             clusterBuilder.MarkSuppressedColumnRange(colId);
          } else {
             clusterBuilder.CommitColumnRange(colId, fOpenColumnRanges[colId].GetFirstElementIndex(),
@@ -1162,7 +1164,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitStagedClusters(std
       for (const auto &columnInfo : cluster.fColumnInfos) {
          if (!columnInfo.fIsSuppressed)
             continue;
-         const auto colId = columnInfo.fPageRange.fPhysicalColumnId;
+         const auto colId = columnInfo.fPageRange.GetPhysicalColumnId();
          // For suppressed columns, we need to reset the first element index to the first element of the next (upcoming)
          // cluster. This information has been determined for the committed cluster descriptor through
          // CommitSuppressedColumnRanges(), so we can use the information from the descriptor.
@@ -1187,7 +1189,8 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitClusterGroup()
       physClusterIDs.emplace_back(fSerializationContext.MapClusterId(i));
    }
 
-   auto szPageList = RNTupleSerializer::SerializePageList(nullptr, descriptor, physClusterIDs, fSerializationContext);
+   auto szPageList =
+      RNTupleSerializer::SerializePageList(nullptr, descriptor, physClusterIDs, fSerializationContext).Unwrap();
    auto bufPageList = MakeUninitArray<unsigned char>(szPageList);
    RNTupleSerializer::SerializePageList(bufPageList.get(), descriptor, physClusterIDs, fSerializationContext);
 
@@ -1241,7 +1244,7 @@ void ROOT::Experimental::Internal::RPagePersistentSink::CommitDatasetImpl()
 
    const auto &descriptor = fDescriptorBuilder.GetDescriptor();
 
-   auto szFooter = RNTupleSerializer::SerializeFooter(nullptr, descriptor, fSerializationContext);
+   auto szFooter = RNTupleSerializer::SerializeFooter(nullptr, descriptor, fSerializationContext).Unwrap();
    auto bufFooter = MakeUninitArray<unsigned char>(szFooter);
    RNTupleSerializer::SerializeFooter(bufFooter.get(), descriptor, fSerializationContext);
 
