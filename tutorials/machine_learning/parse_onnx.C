@@ -10,24 +10,22 @@
 
 using namespace TMVA::Experimental;
 
-std::printf("1");
-
 // /home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Linear_16.onnx
 // /home/prasanna/root/tmva/sofie/test/input_models/Linear_16.onnx
 
 
-void TMVA_SOFIE_ONNX(std::string inputFile = ""){
+void parse_onnx(std::string inputFile = ""){
    if (inputFile.empty() )
       inputFile = "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Linear_16.onnx";
 
-      std::printf("2");
+    //   std::printf("2");
 
     //Creating parser object to parse ONNX files
     SOFIE::RModelParser_ONNX parser;
     SOFIE::RModel model = parser.Parse(inputFile, true);
 
     //Generating inference code
-    model.Generate();
+    model.GenerateGPUOpenCL();
     // write the code in a file (by default Linear_16.hxx and Linear_16.dat
     model.OutputGenerated();
 
