@@ -66,6 +66,33 @@ public:
       return out.str();
    }
 
+   std::string GetLength() {
+      return ConvertDynamicShapeToLength(fShape);
+   }
+
+   std::string GenerateGPUOpenCL(std::string OpName) {
+      OpName = "relu_" + OpName;
+  
+      if (fShape.empty()) {
+          throw std::runtime_error("OpenCL error: TMVA SOFIE Operator Relu called to Generate without being initialized first");
+      }
+  
+      std::stringstream out;
+      auto length = ConvertDynamicShapeToLength(fShape);
+  
+      out << "\n//------ RELU\n";
+      out << "const char* kernelSource = \"__kernel void " << OpName 
+          << "(__global const float* A, __global float* C) {\\n\"\n";
+      out << "\"  int id = get_global_id(0);\\n\"\n";
+      out << "\"  if (id < " << length << ") {\\n\"\n";
+      out << "\"    C[id] = fmax(0.0f, A[id]);\\n\"\n";
+      out << "\"  }\\n\"\n";
+      out << "\"}\";\n";
+  
+      return out.str();
+  }  
+
+
 };
 
 }//SOFIE

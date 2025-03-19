@@ -31,6 +31,8 @@ public:
    virtual std::string GenerateDeclCode() { return "";}
    // generate session data members specific to operator
    virtual std::string GenerateSessionMembersCode(std::string /*opName*/) { return ""; }
+   virtual std::string GenerateGPUOpenCL(std::string OpName) {return "";};
+   virtual std::string GetLength() {return "";};
    virtual std::string Header() { return "";}
 
    //virtual void Forward_reference() = 0;

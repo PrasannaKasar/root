@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<MethodSetup Method="PyKeras::PyKeras">
+  <GeneralInfo>
+    <Info name="TMVA Release" value="4.2.1 [262657]"/>
+    <Info name="ROOT Release" value="6.35/01 [402177]"/>
+    <Info name="Creator" value="prasanna"/>
+    <Info name="Date" value="Sat Mar 15 22:00:11 2025"/>
+    <Info name="Host" value="Linux prasanna 6.11.0-19-generic #19~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Mon Feb 17 11:51:52 UTC 2 x86_64 x86_64 x86_64 GNU/Linux"/>
+    <Info name="Dir" value="/home/prasanna/RootDevelopment/root/tutorials/machine_learning"/>
+    <Info name="Training events" value="14000"/>
+    <Info name="TrainingTime" value="7.25159502e+00"/>
+    <Info name="AnalysisType" value="Classification"/>
+  </GeneralInfo>
+  <Options>
+    <Option name="V" modified="Yes">False</Option>
+    <Option name="VerbosityLevel" modified="No">Default</Option>
+    <Option name="VarTransform" modified="Yes">None</Option>
+    <Option name="H" modified="Yes">True</Option>
+    <Option name="CreateMVAPdfs" modified="No">False</Option>
+    <Option name="IgnoreNegWeightsInTraining" modified="No">False</Option>
+    <Option name="FilenameModel" modified="Yes">Higgs_model.h5</Option>
+    <Option name="FilenameTrainedModel" modified="Yes">Higgs_trained_model.h5</Option>
+    <Option name="BatchSize" modified="Yes">100</Option>
+    <Option name="NumEpochs" modified="Yes">20</Option>
+    <Option name="NumThreads" modified="No">0</Option>
+    <Option name="GpuOptions" modified="Yes">allow_growth=True</Option>
+    <Option name="tf.keras" modified="Yes">True</Option>
+    <Option name="tfkeras" modified="No">True</Option>
+    <Option name="Verbose" modified="No">1</Option>
+    <Option name="ContinueTraining" modified="No">False</Option>
+    <Option name="SaveBestOnly" modified="No">True</Option>
+    <Option name="TriesEarlyStopping" modified="No">-1</Option>
+    <Option name="LearningRateSchedule" modified="No"/>
+    <Option name="TensorBoard" modified="No"/>
+    <Option name="ValidationSize" modified="No">20%</Option>
+    <Option name="UserCode" modified="No"/>
+  </Options>
+  <Variables NVar="7">
+    <Variable VarIndex="0" Expression="m_jj" Label="m_jj" Title="m_jj" Unit="" Internal="m_jj" Type="F" Min="1.46605730e-01" Max="1.30981255e+01"/>
+    <Variable VarIndex="1" Expression="m_jjj" Label="m_jjj" Title="m_jjj" Unit="" Internal="m_jjj" Type="F" Min="3.42014521e-01" Max="7.39196777e+00"/>
+    <Variable VarIndex="2" Expression="m_lv" Label="m_lv" Title="m_lv" Unit="" Internal="m_lv" Type="F" Min="2.66787767e-01" Max="3.68225980e+00"/>
+    <Variable VarIndex="3" Expression="m_jlv" Label="m_jlv" Title="m_jlv" Unit="" Internal="m_jlv" Type="F" Min="3.84410560e-01" Max="6.58312130e+00"/>
+    <Variable VarIndex="4" Expression="m_bb" Label="m_bb" Title="m_bb" Unit="" Internal="m_bb" Type="F" Min="9.34824944e-02" Max="7.85979414e+00"/>
+    <Variable VarIndex="5" Expression="m_wbb" Label="m_wbb" Title="m_wbb" Unit="" Internal="m_wbb" Type="F" Min="3.85025799e-01" Max="4.54251242e+00"/>
+    <Variable VarIndex="6" Expression="m_wwbb" Label="m_wwbb" Title="m_wwbb" Unit="" Internal="m_wwbb" Type="F" Min="4.32279825e-01" Max="4.07281733e+00"/>
+  </Variables>
+  <Spectators NSpec="0"/>
+  <Classes NClass="2">
+    <Class Name="Signal" Index="0"/>
+    <Class Name="Background" Index="1"/>
+  </Classes>
+  <Transformations NTransformations="0"/>
+  <MVAPdfs/>
+</MethodSetup>

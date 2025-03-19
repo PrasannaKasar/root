@@ -1330,6 +1330,143 @@ void RModel::Streamer(TBuffer &R__b) {
     }
 }
 
+void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batchSize, long pos, bool verbose) {
+   fGC += "#include <CL/cl.h>\n";
+   fGC += "#include <stdio.h>\n";
+   fGC += "#include <stdlib.h>\n";
+   fGC += "#include <math.h>\n";
+   fGC += "\n";
+   fGC += "// kernel source function \n";
+   fGC += "\n";
+   for (size_t i = 0; i < fOperators.size(); ++i) {
+      fGC += fOperators[i]->GenerateGPUOpenCL(std::to_string(i));
+      fGC += ("#define VECTOR_SIZE " + fOperators[i]->GetLength());
+   }
+   fGC += "\n";
+   fGC += "cl_int err;\n";
+   fGC += "cl_uint numPlatforms;\n";
+   fGC += "err = clGetPlatformIDs(0, NULL, &numPlatforms);\n";
+   fGC += "if (err != CL_SUCCESS || numPlatforms == 0) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to find any OpenCL platforms. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "cl_platform_id *platforms = malloc(numPlatforms * sizeof(cl_platform_id));\n";
+   fGC += "err = clGetPlatformIDs(numPlatforms, platforms, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to get OpenCL platform IDs. Error code %d\\n\", err);\n";
+   fGC += "   free(platforms);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "// Use the first available platform\n";
+   fGC += "cl_platform_id platform = platforms[0];\n";
+   fGC += "free(platforms);\n";
+   fGC += "\n";
+   fGC += "cl_device_id device;\n";
+   fGC += "err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to get an OpenCL device. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to create a context. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Use clCreateCommandQueueWithProperties instead of deprecated clCreateCommandQueue\n";
+   fGC += "cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, &err);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to create a command queue. Error code %d\\n\", err);\n";
+   fGC += "   clReleaseContext(context);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Create buffers\n";
+   fGC += "cl_mem bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY, VECTOR_SIZE * sizeof(float), NULL, &err);\n";
+   fGC += "cl_mem bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, VECTOR_SIZE * sizeof(float), NULL, &err);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to create buffers. Error code %d\\n\", err);\n";
+   fGC += "   clReleaseCommandQueue(queue);\n";
+   fGC += "   clReleaseContext(context);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Write data to device buffers\n";
+   fGC += "err = clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), A, 0, NULL, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to write to bufferA. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "// Create and build program\n";
+   fGC += "cl_program program = clCreateProgramWithSource(context, 1, &kernelSource, NULL, &err);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to create program. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   // Retrieve and print the build log\n";
+   fGC += "   size_t log_size;\n";
+   fGC += "   clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);\n";
+   fGC += "   char *log = (char *)malloc(log_size);\n";
+   fGC += "   clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to build program. Build log:\\n%s\\n\", log);\n";
+   fGC += "   free(log);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Create kernel\n";
+   for (size_t i = 0; i < fOperators.size(); ++i) {
+       fGC += "   std::string kernelName = relu; \n";
+   }
+   fGC += "cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err)";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to create kernel. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Set kernel arguments\n";
+   fGC += "err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);\n";
+   fGC += "err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferC);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to set kernel arguments. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Enqueue kernel execution\n";
+   fGC += "size_t globalSize = VECTOR_SIZE;\n";
+   fGC += "err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to enqueue kernel. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   fGC += "// Ensure that all operations are complete\n";
+   fGC += "clFinish(queue);\n";
+   fGC += "\n";
+   fGC += "// Read back the results from device memory\n";
+   fGC += "err = clEnqueueReadBuffer(queue, bufferC, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), C, 0, NULL, NULL);\n";
+   fGC += "if (err != CL_SUCCESS) {\n";
+   fGC += "   fprintf(stderr, \"Error: Failed to read bufferC. Error code %d\\n\", err);\n";
+   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "}\n";
+   fGC += "\n";
+   // fGC += "// Print the first 10 results\n";
+   // fGC += "// for (int i = 0; i < 10; i++) {\n";
+   // fGC += "//     printf(\"C[%d] = %f\\n\", i, C[i]);\n";
+   // fGC += "// }\n";
+   fGC += "\n";
+   fGC += "// Cleanup\n";
+   fGC += "clReleaseKernel(kernel);\n";
+   fGC += "clReleaseProgram(program);\n";
+   fGC += "clReleaseMemObject(bufferA);\n";
+   fGC += "clReleaseMemObject(bufferC);\n";
+   fGC += "clReleaseCommandQueue(queue);\n";
+   fGC += "clReleaseContext(context);\n";    
+}
+
+
 }//SOFIE
 }//Experimental
 }//TMVA

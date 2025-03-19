@@ -4,7 +4,7 @@
 using namespace TMVA::Experimental;
 
 
-void Keras_model_SOFIE(const char * modelFile = "CustomKerasModel.h5"){
+void Parse_Keras_Model(const char * modelFile = "CustomKerasModel.h5"){
 
      // check if the model file exists
     if (gSystem->AccessPathName(modelFile)) {

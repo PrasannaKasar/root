@@ -3,18 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define VECTOR_SIZE 10
+// kernel source function 
 
-// // Kernel that performs element-wise vector addition
-// const char* kernelSource =
-// "__kernel void vecAdd(__global float* A, __global float* C) {"
-// "    int id = get_global_id(0);"
-// "    C[id] = std::max(0, A[id]);"
-// "}";
-
-float A[VECTOR_SIZE] = {1, -2, 3, -4, 5, -6, 7, -8, 9, -10};
-float C[VECTOR_SIZE];
-
+#define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE #define VECTOR_SIZE 
 cl_int err;
 cl_uint numPlatforms;
 err = clGetPlatformIDs(0, NULL, &numPlatforms);
@@ -70,7 +61,6 @@ if (err != CL_SUCCESS) {
    fprintf(stderr, "Error: Failed to write to bufferA. Error code %d\n", err);
    return EXIT_FAILURE;
 }
-
 // Create and build program
 cl_program program = clCreateProgramWithSource(context, 1, &kernelSource, NULL, &err);
 if (err != CL_SUCCESS) {
@@ -90,8 +80,17 @@ if (err != CL_SUCCESS) {
 }
 
 // Create kernel
-cl_kernel kernel = clCreateKernel(program, "vecAdd", &err);
-if (err != CL_SUCCESS) {
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+   std::string kernelName = relu; 
+cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err)if (err != CL_SUCCESS) {
    fprintf(stderr, "Error: Failed to create kernel. Error code %d\n", err);
    return EXIT_FAILURE;
 }
@@ -122,10 +121,6 @@ if (err != CL_SUCCESS) {
    return EXIT_FAILURE;
 }
 
-// // Print the first 10 results
-// for (int i = 0; i < 10; i++) {
-//     printf("C[%d] = %f\n", i, C[i]);
-// }
 
 // Cleanup
 clReleaseKernel(kernel);
