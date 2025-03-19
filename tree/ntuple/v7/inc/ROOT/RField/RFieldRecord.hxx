@@ -30,7 +30,6 @@
 #include <vector>
 
 namespace ROOT {
-namespace Experimental {
 
 namespace Detail {
 class RFieldVisitor;
@@ -119,7 +118,7 @@ public:
       return std::max<size_t>(1ul, fSize);
    }
    size_t GetAlignment() const final { return fMaxAlignment; }
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 
    const std::vector<std::size_t> &GetOffsets() const { return fOffsets; }
 };
@@ -250,7 +249,13 @@ public:
    ~RField() final = default;
 };
 
+namespace Experimental {
+// TODO(gparolini): remove before branching ROOT v6.36
+using RRecordField [[deprecated("ROOT::Experimental::RRecordField moved to ROOT::RRecordField")]] = ROOT::RRecordField;
+using RPairField [[deprecated("ROOT::Experimental::RPairField moved to ROOT::RPairField")]] = ROOT::RPairField;
+using RTupleField [[deprecated("ROOT::Experimental::RTupleField moved to ROOT::RTupleField")]] = ROOT::RTupleField;
 } // namespace Experimental
+
 } // namespace ROOT
 
 #endif

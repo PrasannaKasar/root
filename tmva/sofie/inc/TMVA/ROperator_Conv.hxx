@@ -87,13 +87,13 @@ public:
       fOutputTensorNames = { fNY };
    }
 
-   std::vector<ETensorType> TypeInference(std::vector<ETensorType> input) {
+   std::vector<ETensorType> TypeInference(std::vector<ETensorType> input) override {
       ETensorType out = input[0];
       return {out};
    }
 
    // function returning output shape given input
-   std::vector<std::vector<size_t>> ShapeInference(std::vector<std::vector<size_t>> input) {
+   std::vector<std::vector<size_t>> ShapeInference(std::vector<std::vector<size_t>> input) override {
       // shape of convolution input has to be (according to ONNX): N x C x H x W
       // Where N : batch size, C : input  channels, H : input height, W : input width
 
@@ -282,7 +282,7 @@ public:
       fOutputTensorNames.emplace_back(imcol);
    }
 
-   std::string GenerateInitCode() {
+   std::string GenerateInitCode() override {
       std::stringstream out;
       // Generate initialization code for broadcasting of bias tensor
       if (!fNB2.empty()) {
@@ -301,7 +301,7 @@ public:
    }
 
    // Generate code for Session data members (e.g. internal vectors)
-   virtual std::string GenerateSessionMembersCode(std::string opName) {
+   virtual std::string GenerateSessionMembersCode(std::string opName) override {
 
       size_t outputChannelSize = fShapeY[2];  // size/channel = D * H * W
       size_t kernelSize = fAttrKernelShape[0];
@@ -323,7 +323,7 @@ public:
       return out.str();
    }
 
-   std::string Generate(std::string OpName) {
+   std::string Generate(std::string OpName) override {
       OpName = "op_" + OpName;
 
       if (fShapeX.empty() || fShapeW.empty() || (fNB != "" && fShapeB.empty()) || fShapeY.empty()) {
@@ -344,10 +344,6 @@ public:
       size_t oWidth = fShapeY[fDim+1]; // output width
 
       out << "\n//----  operator Conv " << OpName << "\n";
-
-      // create first matrix with convolution kernels
-      if (!fUseSession)
-         out << SP << fType << " tensor_" << fNX << "_f[" << fShapeW[0] * fShapeW[1] * fAttrKernelShape[0] * fAttrKernelShape[1] << "] = {0};\n";
 
       // vectorize the (dilated)convolution kernels into a matrix
       // no need to transpose the matrix
@@ -401,11 +397,6 @@ public:
       out << SP << "float " << OpName << "_alpha = 1.0;\n";
       out << SP << "float " << OpName << "_beta = 0.0;\n";
 
-      if (!fUseSession) {
-         out << SP << fType << " tensor_" << fNX << "_xcol["
-             << fShapeX[1] * fAttrKernelShape[0] * fAttrKernelShape[1] * fAttrKernelShape[2] * oDepth * oHeight * oWidth
-             << "] = {0};\n";
-      }
 
       // Loop on batch size
       out << SP << "for (size_t n = 0; n < " << bsize << "; n++) {\n";
@@ -556,7 +547,7 @@ public:
 
    /*! \brief Returns the blas routines needed to compile the generated code
     */
-   std::vector<std::string> GetBlasRoutines() { return { std::string("Gemm"), std::string("Axpy") }; }
+   std::vector<std::string> GetBlasRoutines() override { return { std::string("Gemm"), std::string("Axpy") }; }
 };
 
 } // namespace SOFIE

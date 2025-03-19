@@ -342,13 +342,13 @@ public:
    RInterface<RDFDetail::RFilterWithMissingValues<Proxied>, DS_t> FilterAvailable(std::string_view column)
    {
       const auto columns = ColumnNames_t{column.data()};
-      CheckAndFillDSColumns(columns, TTraits::TypeList<void>{});
       // For now disable this functionality in case of an empty data source and
       // the column name was not defined previously.
       if (ROOT::Internal::RDF::GetDataSourceLabel(*this) == "EmptyDS")
          GetValidatedColumnNames(1, columns);
       using F_t = RDFDetail::RFilterWithMissingValues<Proxied>;
       auto filterPtr = std::make_shared<F_t>(/*discardEntry*/ true, fProxiedPtr, fColRegister, columns);
+      CheckAndFillDSColumns(columns, TTraits::TypeList<void>{});
       return RInterface<F_t, DS_t>(std::move(filterPtr), *fLoopManager, fColRegister);
    }
 
@@ -393,13 +393,13 @@ public:
    RInterface<RDFDetail::RFilterWithMissingValues<Proxied>, DS_t> FilterMissing(std::string_view column)
    {
       const auto columns = ColumnNames_t{column.data()};
-      CheckAndFillDSColumns(columns, TTraits::TypeList<void>{});
       // For now disable this functionality in case of an empty data source and
       // the column name was not defined previously.
       if (ROOT::Internal::RDF::GetDataSourceLabel(*this) == "EmptyDS")
          GetValidatedColumnNames(1, columns);
       using F_t = RDFDetail::RFilterWithMissingValues<Proxied>;
       auto filterPtr = std::make_shared<F_t>(/*discardEntry*/ false, fProxiedPtr, fColRegister, columns);
+      CheckAndFillDSColumns(columns, TTraits::TypeList<void>{});
       return RInterface<F_t, DS_t>(std::move(filterPtr), *fLoopManager, fColRegister);
    }
 
@@ -683,8 +683,6 @@ public:
       if (ROOT::Internal::RDF::GetDataSourceLabel(*this) == "EmptyDS")
          RDFInternal::CheckForDefinition(where, column, fColRegister, fLoopManager->GetBranchNames(),
                                          GetDataSource() ? GetDataSource()->GetColumnNames() : ColumnNames_t{});
-      const auto validColumnNames = ColumnNames_t{column.data()};
-      CheckAndFillDSColumns(validColumnNames, TTraits::TypeList<T>{});
 
       // Declare return type to the interpreter, for future use by jitted actions
       auto retTypeName = RDFInternal::TypeID2TypeName(typeid(T));
@@ -695,8 +693,10 @@ public:
          retTypeName = "CLING_UNKNOWN_TYPE_" + demangledType;
       }
 
+      const auto validColumnNames = ColumnNames_t{column.data()};
       auto newColumn = std::make_shared<ROOT::Internal::RDF::RDefaultValueFor<T>>(
          column, retTypeName, defaultValue, validColumnNames, fColRegister, *fLoopManager);
+      CheckAndFillDSColumns(validColumnNames, TTraits::TypeList<T>{});
 
       RDFInternal::RColumnRegister newCols(fColRegister);
       newCols.AddDefine(std::move(newColumn));
@@ -1349,11 +1349,6 @@ public:
          if (fLoopManager->GetTree()) {
             throw std::runtime_error("Snapshotting from TTree to RNTuple is not yet supported. The current recommended "
                                      "way to convert TTrees to RNTuple is through the RNTupleImporter.");
-         }
-
-         if (!dirname.empty()) {
-            throw std::runtime_error(
-               "RDataFrame: Snapshotting an RNTuple to a TFile sub-directory is currently not supported.");
          }
 
          // The data source of the RNTuple resulting from the Snapshot action does not exist yet here, so we create one
@@ -3250,11 +3245,6 @@ private:
          if (fLoopManager->GetTree()) {
             throw std::runtime_error("Snapshotting from TTree to RNTuple is not yet supported. The current recommended "
                                      "way to convert TTrees to RNTuple is through the RNTupleImporter.");
-         }
-
-         if (!dirname.empty()) {
-            throw std::runtime_error(
-               "RDataFrame: Snapshotting an RNTuple to a TFile sub-directory is currently not supported.");
          }
 
          auto newRDF =

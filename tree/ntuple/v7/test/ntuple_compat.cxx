@@ -36,8 +36,7 @@ TEST(RNTupleCompat, FeatureFlag)
    RNTupleDescriptorBuilder descBuilder;
    descBuilder.SetNTuple("ntpl", "");
    descBuilder.SetFeature(RNTupleDescriptor::kFeatureFlagTest);
-   descBuilder.AddField(
-      RFieldDescriptorBuilder::FromField(ROOT::Experimental::RFieldZero()).FieldId(0).MakeDescriptor().Unwrap());
+   descBuilder.AddField(RFieldDescriptorBuilder::FromField(ROOT::RFieldZero()).FieldId(0).MakeDescriptor().Unwrap());
    ASSERT_TRUE(static_cast<bool>(descBuilder.EnsureValidDescriptor()));
 
    RNTupleWriteOptions options;
@@ -154,8 +153,7 @@ TEST(RNTupleCompat, FwdCompat_FutureNTupleAnchor)
 }
 
 template <>
-class ROOT::Experimental::RField<ROOT::Experimental::Internal::RTestFutureColumn> final
-   : public RSimpleField<ROOT::Experimental::Internal::RTestFutureColumn> {
+class ROOT::RField<ROOT::Internal::RTestFutureColumn> final : public RSimpleField<ROOT::Internal::RTestFutureColumn> {
 protected:
    std::unique_ptr<RFieldBase> CloneImpl(std::string_view newName) const final
    {
@@ -183,7 +181,7 @@ TEST(RNTupleCompat, FutureColumnType)
    FileRaii fileGuard("test_ntuple_compat_future_col_type.root");
    {
       auto model = RNTupleModel::Create();
-      auto col = model->MakeField<ROOT::Experimental::Internal::RTestFutureColumn>("futureColumn");
+      auto col = model->MakeField<ROOT::Internal::RTestFutureColumn>("futureColumn");
       auto colValid = model->MakeField<float>("float");
       auto writer = RNTupleWriter::Recreate(std::move(model), "ntpl", fileGuard.GetPath());
       col->dummy = 0x42424242;
@@ -233,8 +231,8 @@ TEST(RNTupleCompat, FutureColumnType_Nested)
    {
       auto model = RNTupleModel::Create();
       std::vector<std::unique_ptr<RFieldBase>> itemFields;
-      itemFields.emplace_back(new RField<std::vector<ROOT::Experimental::Internal::RTestFutureColumn>>("vec"));
-      auto field = std::make_unique<ROOT::Experimental::RRecordField>("future", std::move(itemFields));
+      itemFields.emplace_back(new RField<std::vector<ROOT::Internal::RTestFutureColumn>>("vec"));
+      auto field = std::make_unique<ROOT::RRecordField>("future", std::move(itemFields));
       model->AddField(std::move(field));
       auto floatP = model->MakeField<float>("float");
       auto writer = RNTupleWriter::Recreate(std::move(model), "ntpl", fileGuard.GetPath());
@@ -335,7 +333,7 @@ TEST(RNTupleCompat, FutureFieldStructuralRole_Nested)
       std::vector<std::unique_ptr<RFieldBase>> itemFields;
       itemFields.emplace_back(new RField<int>("int"));
       itemFields.emplace_back(new RFutureField("future"));
-      auto field = std::make_unique<ROOT::Experimental::RRecordField>("record", std::move(itemFields));
+      auto field = std::make_unique<ROOT::RRecordField>("record", std::move(itemFields));
       model->AddField(std::move(field));
       model->MakeField<float>("float");
       auto writer = RNTupleWriter::Recreate(std::move(model), "ntpl", fileGuard.GetPath());

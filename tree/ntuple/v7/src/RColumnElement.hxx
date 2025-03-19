@@ -28,7 +28,7 @@
 #endif
 #endif /* R__LITTLE_ENDIAN */
 
-namespace ROOT::Experimental::Internal::BitPacking {
+namespace ROOT::Internal::BitPacking {
 
 using Word_t = std::uintmax_t;
 inline constexpr std::size_t kBitsPerWord = sizeof(Word_t) * 8;
@@ -54,7 +54,7 @@ void PackBits(void *dst, const void *src, std::size_t count, std::size_t sizeofS
 /// `dst` must be at least `count * sizeofDst` bytes long.
 void UnpackBits(void *dst, const void *src, std::size_t count, std::size_t sizeofDst, std::size_t nSrcBits);
 
-} // namespace ROOT::Experimental::Internal::BitPacking
+} // namespace ROOT::Internal::BitPacking
 
 namespace {
 
@@ -318,9 +318,9 @@ inline void CastZigzagSplitUnpack(void *destination, const void *source, std::si
 namespace {
 
 using ROOT::ENTupleColumnType;
-using ROOT::Experimental::Internal::RColumnElementBase;
 using ROOT::Internal::kTestFutureColumnType;
 using ROOT::Internal::MakeUninitArray;
+using ROOT::Internal::RColumnElementBase;
 
 template <typename CppT, ENTupleColumnType>
 class RColumnElement;
@@ -715,26 +715,24 @@ public:
 };
 
 template <>
-class RColumnElement<ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kUnknown>
-   : public RColumnElementBase {
+class RColumnElement<ROOT::Internal::RColumnIndex, ENTupleColumnType::kUnknown> : public RColumnElementBase {
 public:
-   static constexpr std::size_t kSize = sizeof(ROOT::Experimental::Internal::RColumnIndex);
+   static constexpr std::size_t kSize = sizeof(ROOT::Internal::RColumnIndex);
    RColumnElement() : RColumnElementBase(kSize) {}
    RIdentifier GetIdentifier() const final
    {
-      return RIdentifier{typeid(ROOT::Experimental::Internal::RColumnIndex), ENTupleColumnType::kUnknown};
+      return RIdentifier{typeid(ROOT::Internal::RColumnIndex), ENTupleColumnType::kUnknown};
    }
 };
 
 template <>
-class RColumnElement<ROOT::Experimental::Internal::RColumnSwitch, ENTupleColumnType::kUnknown>
-   : public RColumnElementBase {
+class RColumnElement<ROOT::Internal::RColumnSwitch, ENTupleColumnType::kUnknown> : public RColumnElementBase {
 public:
-   static constexpr std::size_t kSize = sizeof(ROOT::Experimental::Internal::RColumnSwitch);
+   static constexpr std::size_t kSize = sizeof(ROOT::Internal::RColumnSwitch);
    RColumnElement() : RColumnElementBase(kSize) {}
    RIdentifier GetIdentifier() const final
    {
-      return RIdentifier{typeid(ROOT::Experimental::Internal::RColumnSwitch), ENTupleColumnType::kUnknown};
+      return RIdentifier{typeid(ROOT::Internal::RColumnSwitch), ENTupleColumnType::kUnknown};
    }
 };
 
@@ -744,8 +742,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template <>
-class RColumnElement<ROOT::Experimental::Internal::RColumnSwitch, ENTupleColumnType::kSwitch>
-   : public RColumnElementBase {
+class RColumnElement<ROOT::Internal::RColumnSwitch, ENTupleColumnType::kSwitch> : public RColumnElementBase {
 private:
    struct RSwitchElement {
       std::uint64_t fIndex;
@@ -754,14 +751,14 @@ private:
 
 public:
    static constexpr bool kIsMappable = false;
-   static constexpr std::size_t kSize = sizeof(ROOT::Experimental::Internal::RColumnSwitch);
+   static constexpr std::size_t kSize = sizeof(ROOT::Internal::RColumnSwitch);
    static constexpr std::size_t kBitsOnStorage = 96;
    RColumnElement() : RColumnElementBase(kSize, kBitsOnStorage) {}
    bool IsMappable() const final { return kIsMappable; }
 
    void Pack(void *dst, const void *src, std::size_t count) const final
    {
-      auto srcArray = reinterpret_cast<const ROOT::Experimental::Internal::RColumnSwitch *>(src);
+      auto srcArray = reinterpret_cast<const ROOT::Internal::RColumnSwitch *>(src);
       auto dstArray = reinterpret_cast<unsigned char *>(dst);
       for (std::size_t i = 0; i < count; ++i) {
          RSwitchElement element{srcArray[i].GetIndex(), srcArray[i].GetTag()};
@@ -776,7 +773,7 @@ public:
    void Unpack(void *dst, const void *src, std::size_t count) const final
    {
       auto srcArray = reinterpret_cast<const unsigned char *>(src);
-      auto dstArray = reinterpret_cast<ROOT::Experimental::Internal::RColumnSwitch *>(dst);
+      auto dstArray = reinterpret_cast<ROOT::Internal::RColumnSwitch *>(dst);
       for (std::size_t i = 0; i < count; ++i) {
          RSwitchElement element;
          memcpy(&element, srcArray + i * 12, 12);
@@ -784,13 +781,13 @@ public:
          element.fIndex = RByteSwap<8>::bswap(element.fIndex);
          element.fTag = RByteSwap<4>::bswap(element.fTag);
 #endif
-         dstArray[i] = ROOT::Experimental::Internal::RColumnSwitch(element.fIndex, element.fTag);
+         dstArray[i] = ROOT::Internal::RColumnSwitch(element.fIndex, element.fTag);
       }
    }
 
    RIdentifier GetIdentifier() const final
    {
-      return RIdentifier{typeid(ROOT::Experimental::Internal::RColumnSwitch), ENTupleColumnType::kSwitch};
+      return RIdentifier{typeid(ROOT::Internal::RColumnSwitch), ENTupleColumnType::kSwitch};
    }
 };
 
@@ -824,7 +821,7 @@ public:
       std::uint16_t *uint16Array = reinterpret_cast<std::uint16_t *>(dst);
 
       for (std::size_t i = 0; i < count; ++i) {
-         uint16Array[i] = ROOT::Experimental::Internal::FloatToHalf(floatArray[i]);
+         uint16Array[i] = ROOT::Internal::FloatToHalf(floatArray[i]);
          ByteSwapIfNecessary(uint16Array[i]);
       }
    }
@@ -837,7 +834,7 @@ public:
       for (std::size_t i = 0; i < count; ++i) {
          std::uint16_t val = uint16Array[i];
          ByteSwapIfNecessary(val);
-         floatArray[i] = ROOT::Experimental::Internal::HalfToFloat(val);
+         floatArray[i] = ROOT::Internal::HalfToFloat(val);
       }
    }
 
@@ -859,7 +856,7 @@ public:
       std::uint16_t *uint16Array = reinterpret_cast<std::uint16_t *>(dst);
 
       for (std::size_t i = 0; i < count; ++i) {
-         uint16Array[i] = ROOT::Experimental::Internal::FloatToHalf(static_cast<float>(doubleArray[i]));
+         uint16Array[i] = ROOT::Internal::FloatToHalf(static_cast<float>(doubleArray[i]));
          ByteSwapIfNecessary(uint16Array[i]);
       }
    }
@@ -872,7 +869,7 @@ public:
       for (std::size_t i = 0; i < count; ++i) {
          std::uint16_t val = uint16Array[i];
          ByteSwapIfNecessary(val);
-         doubleArray[i] = static_cast<double>(ROOT::Experimental::Internal::HalfToFloat(val));
+         doubleArray[i] = static_cast<double>(ROOT::Internal::HalfToFloat(val));
       }
    }
 
@@ -908,7 +905,7 @@ class RColumnElement<float, ENTupleColumnType::kReal32Trunc> : public RColumnEle
 public:
    void Pack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental::Internal::BitPacking;
+      using namespace ROOT::Internal::BitPacking;
 
       R__ASSERT(GetPackedSize(count) == MinBufSize(count, fBitsOnStorage));
 
@@ -926,7 +923,7 @@ public:
 
    void Unpack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental::Internal::BitPacking;
+      using namespace ROOT::Internal::BitPacking;
 
       R__ASSERT(GetPackedSize(count) == MinBufSize(count, fBitsOnStorage));
 
@@ -942,7 +939,7 @@ class RColumnElement<double, ENTupleColumnType::kReal32Trunc> : public RColumnEl
 public:
    void Pack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental::Internal::BitPacking;
+      using namespace ROOT::Internal::BitPacking;
 
       R__ASSERT(GetPackedSize(count) == MinBufSize(count, fBitsOnStorage));
 
@@ -967,7 +964,7 @@ public:
 
    void Unpack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental::Internal::BitPacking;
+      using namespace ROOT::Internal::BitPacking;
 
       R__ASSERT(GetPackedSize(count) == MinBufSize(count, fBitsOnStorage));
 
@@ -1124,7 +1121,7 @@ public:
 
    void Pack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental;
+      using namespace ROOT::Internal;
 
       // TODO(gparolini): see if we can avoid this allocation
       auto quantized = MakeUninitArray<Quantize::Quantized_t>(count);
@@ -1137,18 +1134,18 @@ public:
                                         " values were found of of range for quantization while packing (range is [" +
                                         std::to_string(min) + ", " + std::to_string(max) + "])"));
       }
-      Internal::BitPacking::PackBits(dst, quantized.get(), count, sizeof(Quantize::Quantized_t), fBitsOnStorage);
+      BitPacking::PackBits(dst, quantized.get(), count, sizeof(Quantize::Quantized_t), fBitsOnStorage);
    }
 
    void Unpack(void *dst, const void *src, std::size_t count) const final
    {
-      using namespace ROOT::Experimental;
+      using namespace ROOT::Internal;
 
       // TODO(gparolini): see if we can avoid this allocation
       auto quantized = MakeUninitArray<Quantize::Quantized_t>(count);
       assert(fValueRange);
       const auto [min, max] = *fValueRange;
-      Internal::BitPacking::UnpackBits(quantized.get(), src, count, sizeof(Quantize::Quantized_t), fBitsOnStorage);
+      BitPacking::UnpackBits(quantized.get(), src, count, sizeof(Quantize::Quantized_t), fBitsOnStorage);
       [[maybe_unused]] const int nOutOfRange =
          Quantize::UnquantizeReals(reinterpret_cast<T *>(dst), quantized.get(), count, min, max, fBitsOnStorage);
       // NOTE: here, differently from Pack(), we don't ever expect to have values out of range, since the quantized
@@ -1486,21 +1483,20 @@ DECLARE_RCOLUMNELEMENT_SPEC(double, ENTupleColumnType::kSplitReal64, 64, RColumn
 DECLARE_RCOLUMNELEMENT_SPEC(double, ENTupleColumnType::kReal32, 32, RColumnElementCastLE, <double, float>);
 DECLARE_RCOLUMNELEMENT_SPEC(double, ENTupleColumnType::kSplitReal32, 32, RColumnElementSplitLE, <double, float>);
 
-DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kIndex64, 64,
-                            RColumnElementLE, <std::uint64_t>);
-DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kIndex32, 32,
-                            RColumnElementCastLE, <std::uint64_t, std::uint32_t>);
-DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex64, 64,
+DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Internal::RColumnIndex, ENTupleColumnType::kIndex64, 64, RColumnElementLE,
+                            <std::uint64_t>);
+DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Internal::RColumnIndex, ENTupleColumnType::kIndex32, 32, RColumnElementCastLE,
+                            <std::uint64_t, std::uint32_t>);
+DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex64, 64,
                             RColumnElementDeltaSplitLE, <std::uint64_t, std::uint64_t>);
-DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex32, 32,
+DECLARE_RCOLUMNELEMENT_SPEC(ROOT::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex32, 32,
                             RColumnElementDeltaSplitLE, <std::uint64_t, std::uint32_t>);
 
 template <>
-class RColumnElement<ROOT::Experimental::Internal::RTestFutureColumn, kTestFutureColumnType> final
-   : public RColumnElementBase {
+class RColumnElement<ROOT::Internal::RTestFutureColumn, kTestFutureColumnType> final : public RColumnElementBase {
 public:
    static constexpr bool kIsMappable = false;
-   static constexpr std::size_t kSize = sizeof(ROOT::Experimental::Internal::RTestFutureColumn);
+   static constexpr std::size_t kSize = sizeof(ROOT::Internal::RTestFutureColumn);
    static constexpr std::size_t kBitsOnStorage = kSize * 8;
    RColumnElement() : RColumnElementBase(kSize, kBitsOnStorage) {}
 
@@ -1510,7 +1506,7 @@ public:
 
    RIdentifier GetIdentifier() const final
    {
-      return RIdentifier{typeid(ROOT::Experimental::Internal::RTestFutureColumn), kTestFutureColumnType};
+      return RIdentifier{typeid(ROOT::Internal::RTestFutureColumn), kTestFutureColumnType};
    }
 };
 

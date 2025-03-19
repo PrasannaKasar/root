@@ -38,6 +38,7 @@
 #include <RooFormulaVar.h>
 
 #include <Math/CholeskyDecomp.h>
+#include <Math/Util.h>
 
 #include "ConstraintHelpers.h"
 #include "RooEvaluatorWrapper.h"
@@ -591,6 +592,9 @@ std::unique_ptr<RooFitResult> minimize(RooAbsReal &pdf, RooAbsReal &nll, RooAbsD
 
 std::unique_ptr<RooAbsReal> createNLL(RooAbsPdf &pdf, RooAbsData &data, const RooLinkedList &cmdList)
 {
+   auto timingScope = std::make_unique<ROOT::Math::Util::TimingScope>(
+      [&pdf](std::string const &msg) { oocoutI(&pdf, Fitting) << msg << std::endl; }, "Creation of NLL object took");
+
    auto baseName = std::string("nll_") + pdf.GetName() + "_" + data.GetName();
 
    // Select the pdf-specific commands
@@ -780,6 +784,12 @@ std::unique_ptr<RooAbsReal> createNLL(RooAbsPdf &pdf, RooAbsData &data, const Ro
           evalBackend == RooFit::EvalBackend::Value::CodegenNoGrad) {
          bool createGradient = evalBackend == RooFit::EvalBackend::Value::Codegen;
          auto simPdf = dynamic_cast<RooSimultaneous const *>(pdfClone.get());
+
+         // We destroy the timing scrope for createNLL prematurely, because we
+         // separately measure the time for jitting and gradient creation
+         // inside the RooFuncWrapper.
+         timingScope.reset();
+
          nllWrapper = std::make_unique<RooFit::Experimental::RooFuncWrapper>("nll_func_wrapper", "nll_func_wrapper",
                                                                              *nll, &data, simPdf, createGradient);
          if (createGradient)

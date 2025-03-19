@@ -12,11 +12,13 @@
 
 #include "Minuit2/MnConfig.h"
 
-#include <sstream>
-#include <utility>
 #include <cassert>
-#include <string>
 #include <ios>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <functional>
 
 namespace ROOT {
 namespace Minuit2 {

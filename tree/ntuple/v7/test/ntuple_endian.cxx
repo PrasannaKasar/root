@@ -25,12 +25,13 @@ using ROOT::NTupleSize_t;
 using ROOT::Experimental::RNTupleDescriptor;
 using ROOT::Experimental::RNTupleModel;
 using ROOT::Experimental::Internal::RCluster;
-using ROOT::Experimental::Internal::RColumnElementBase;
-using ROOT::Experimental::Internal::RPage;
-using ROOT::Experimental::Internal::RPageRef;
 using ROOT::Experimental::Internal::RPageSink;
 using ROOT::Experimental::Internal::RPageSource;
 using ROOT::Experimental::Internal::RPageStorage;
+using ROOT::Internal::RColumn;
+using ROOT::Internal::RColumnElementBase;
+using ROOT::Internal::RPage;
+using ROOT::Internal::RPageRef;
 
 namespace {
 class RPageSinkMock : public RPageSink {
@@ -38,7 +39,7 @@ protected:
    const RColumnElementBase &fElement;
    std::vector<RPageStorage::RSealedPage> fPages;
 
-   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, ROOT::Experimental::Internal::RColumn &) final { return {}; }
+   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, ROOT::Internal::RColumn &) final { return {}; }
 
    const RNTupleDescriptor &GetDescriptor() const final
    {
@@ -97,7 +98,7 @@ public:
    RPageRef LoadPage(ColumnHandle_t columnHandle, NTupleSize_t i) final
    {
       auto page = RPageSource::UnsealPage(fPages[i], fElement).Unwrap();
-      ROOT::Experimental::Internal::RPagePool::RKey key{columnHandle.fPhysicalId, std::type_index(typeid(void))};
+      ROOT::Internal::RPagePool::RKey key{columnHandle.fPhysicalId, std::type_index(typeid(void))};
       return fPagePool.RegisterPage(std::move(page), key);
    }
    RPageRef LoadPage(ColumnHandle_t, ROOT::RNTupleLocalIndex) final { return RPageRef(); }
@@ -188,7 +189,7 @@ TEST(RColumnElementEndian, DeltaSplit)
 #ifndef R__BYTESWAP
    GTEST_SKIP() << "Skipping test on big endian node";
 #else
-   RColumnElement<ROOT::Experimental::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex32> element;
+   RColumnElement<ROOT::Internal::RColumnIndex, ENTupleColumnType::kSplitIndex32> element;
    EXPECT_EQ(element.IsMappable(), false);
 
    RPageSinkMock sink1(element);

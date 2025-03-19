@@ -3281,7 +3281,7 @@ void TF1::SavePrimitive(std::ostream &out, Option_t *option /*= ""*/)
 
    const char *addToGlobList = fParent ? ", TF1::EAddToList::kNo" : ", TF1::EAddToList::kDefault";
 
-   out << "   " << std::endl;
+   out << "   \n";
    if (!fType) {
       out << "   TF1 *" << f1Name << " = new TF1(\"" << GetName() << "\", \""
           << TString(GetTitle()).ReplaceSpecialCppChars() << "\", " << fXmin << "," << fXmax << addToGlobList << ");\n";
@@ -3290,50 +3290,54 @@ void TF1::SavePrimitive(std::ostream &out, Option_t *option /*= ""*/)
    } else {
       out << "   TF1 *" << f1Name << " = new TF1(\"" << "*" << GetName() << "\", " << fXmin << "," << fXmax
           << "," << GetNpar() << ");\n";
-      out << "    // The original function : " << GetTitle() << " had originally been created by:\n";
-      out << "    // TF1 *" << GetName() << " = new TF1(\"" << GetName() << "\", " << GetTitle() << ","
+      out << "   // The original function : " << GetTitle() << " had originally been created by:\n";
+      out << "   // TF1 *" << GetName() << " = new TF1(\"" << GetName() << "\", \"" << GetTitle() << "\", "
           << fXmin << "," << fXmax << "," << GetNpar() << ", 1" << addToGlobList << ");\n";
       out << "   " << f1Name << "->SetRange(" << fXmin << "," << fXmax << ");\n";
       SavePrimitiveNameTitle(out, f1Name);
       if (fNpx != 100)
          out << "   " << f1Name << "->SetNpx(" << fNpx << ");\n";
-      Double_t dx = (fXmax - fXmin) / fNpx;
-      Double_t xv[1];
-      Double_t *parameters = GetParameters();
-      InitArgs(xv, parameters);
-      for (Int_t i = 0; i <= fNpx; i++) {
-         xv[0] = fXmin + dx * i;
-         Double_t save = EvalPar(xv, parameters);
-         out << "   " << f1Name << "->SetSavedPoint(" << i << "," << save << ");\n";
+
+      Bool_t saved = kFALSE;
+      if (fSave.empty() && (fType != EFType::kCompositionFcn)) {
+         saved = kTRUE;
+         Save(fXmin, fXmax, 0, 0, 0, 0);
       }
-      out << "   " << f1Name << "->SetSavedPoint(" << fNpx + 1 << "," << fXmin << ");\n";
-      out << "   " << f1Name << "->SetSavedPoint(" << fNpx + 2 << "," << fXmax << ");\n";
+      if (!fSave.empty()) {
+         TString arrs = SavePrimitiveArray(out, f1Name, fSave.size(), fSave.data());
+         out << "   for (int n = 0; n < " << fSave.size() << "; n++)\n";
+         out << "      " << f1Name << "->SetSavedPoint(n, "  << arrs << "[n]);\n";
+      }
+
+      if (saved)
+         fSave.clear();
    }
 
    if (TestBit(kNotDraw))
       out << "   " << f1Name.Data() << "->SetBit(TF1::kNotDraw);\n";
 
-   SaveFillAttributes(out, f1Name, 0, 1001);
-   SaveMarkerAttributes(out, f1Name, 1, 1, 1);
-   SaveLineAttributes(out, f1Name, 1, 1, 4);
+   SaveFillAttributes(out, f1Name, -1, 0);
+   SaveMarkerAttributes(out, f1Name, -1, -1, -1);
+   SaveLineAttributes(out, f1Name, -1, -1, -1);
 
    if (GetChisquare() != 0) {
       out << "   " << f1Name << "->SetChisquare(" << GetChisquare() << ");\n";
       out << "   " << f1Name << "->SetNDF(" << GetNDF() << ");\n";
    }
 
-   if (GetXaxis())
-      GetXaxis()->SaveAttributes(out, f1Name, "->GetXaxis()");
-   if (GetYaxis())
-      GetYaxis()->SaveAttributes(out, f1Name, "->GetYaxis()");
-
    Double_t parmin, parmax;
    for (Int_t i = 0; i < GetNpar(); i++) {
-      out << "   " << f1Name << "->SetParameter(" << i << "," << GetParameter(i) << ");\n";
-      out << "   " << f1Name << "->SetParError(" << i << "," << GetParError(i) << ");\n";
+      out << "   " << f1Name << "->SetParameter(" << i << ", " << GetParameter(i) << ");\n";
+      out << "   " << f1Name << "->SetParError(" << i << ", " << GetParError(i) << ");\n";
       GetParLimits(i, parmin, parmax);
-      out << "   " << f1Name << "->SetParLimits(" << i << "," << parmin << "," << parmax << ");\n";
+      out << "   " << f1Name << "->SetParLimits(" << i << ", " << parmin << ", " << parmax << ");\n";
    }
+
+   if (fHistogram && !strstr(option, "same")) {
+      GetXaxis()->SaveAttributes(out, f1Name, "->GetXaxis()");
+      GetYaxis()->SaveAttributes(out, f1Name, "->GetYaxis()");
+   }
+
    if (!option || !strstr(option, "nodraw"))
       out << "   " << f1Name << "->Draw(\"" << TString(option).ReplaceSpecialCppChars() << "\");\n";
 }
@@ -3624,16 +3628,9 @@ void TF1::Update()
    if (fHistogram) {
       TString XAxisTitle = fHistogram->GetXaxis()->GetTitle();
       TString YAxisTitle = fHistogram->GetYaxis()->GetTitle();
-      Int_t XLabCol = fHistogram->GetXaxis()->GetLabelColor();
-      Int_t YLabCol = fHistogram->GetYaxis()->GetLabelColor();
-      Int_t XLabFont = fHistogram->GetXaxis()->GetLabelFont();
-      Int_t YLabFont = fHistogram->GetYaxis()->GetLabelFont();
-      Float_t XLabOffset = fHistogram->GetXaxis()->GetLabelOffset();
-      Float_t YLabOffset = fHistogram->GetYaxis()->GetLabelOffset();
-      Float_t XLabSize = fHistogram->GetXaxis()->GetLabelSize();
-      Float_t YLabSize = fHistogram->GetYaxis()->GetLabelSize();
-      Int_t XNdiv = fHistogram->GetXaxis()->GetNdivisions();
-      Int_t YNdiv = fHistogram->GetYaxis()->GetNdivisions();
+      TAttAxis attx, atty;
+      fHistogram->GetXaxis()->TAttAxis::Copy(attx);
+      fHistogram->GetYaxis()->TAttAxis::Copy(atty);
 
       delete fHistogram;
       fHistogram = nullptr;
@@ -3641,16 +3638,8 @@ void TF1::Update()
 
       fHistogram->GetXaxis()->SetTitle(XAxisTitle.Data());
       fHistogram->GetYaxis()->SetTitle(YAxisTitle.Data());
-      fHistogram->GetXaxis()->SetLabelColor(XLabCol);
-      fHistogram->GetYaxis()->SetLabelColor(YLabCol);
-      fHistogram->GetXaxis()->SetLabelFont(XLabFont);
-      fHistogram->GetYaxis()->SetLabelFont(YLabFont);
-      fHistogram->GetXaxis()->SetLabelOffset(XLabOffset);
-      fHistogram->GetYaxis()->SetLabelOffset(YLabOffset);
-      fHistogram->GetXaxis()->SetLabelSize(XLabSize);
-      fHistogram->GetYaxis()->SetLabelSize(YLabSize);
-      fHistogram->GetXaxis()->SetNdivisions(XNdiv);
-      fHistogram->GetYaxis()->SetNdivisions(YNdiv);
+      attx.Copy(*(fHistogram->GetXaxis()));
+      atty.Copy(*(fHistogram->GetYaxis()));
    }
    if (!fIntegral.empty()) {
       fIntegral.clear();

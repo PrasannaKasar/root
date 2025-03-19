@@ -42,7 +42,10 @@ public:
    {
    }
 
-   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, RColumn &column) final { return {fNColumns++, &column}; }
+   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, ROOT::Internal::RColumn &column) final
+   {
+      return {fNColumns++, &column};
+   }
 
    const RNTupleDescriptor &GetDescriptor() const final
    {
@@ -52,9 +55,11 @@ public:
 
    ROOT::NTupleSize_t GetNEntries() const final { return 0; }
 
-   void ConnectFields(const std::vector<RFieldBase *> &fields, ROOT::NTupleSize_t firstEntry)
+   void ConnectFields(const std::vector<ROOT::RFieldBase *> &fields, ROOT::NTupleSize_t firstEntry)
    {
-      auto connectField = [&](RFieldBase &f) { CallConnectPageSinkOnField(f, *this, firstEntry); };
+      auto connectField = [&](ROOT::RFieldBase &f) {
+         ROOT::Internal::CallConnectPageSinkOnField(f, *this, firstEntry);
+      };
       for (auto *f : fields) {
          connectField(*f);
          for (auto &descendant : *f) {
@@ -74,7 +79,10 @@ public:
    void UpdateExtraTypeInfo(const RExtraTypeInfoDescriptor &) final {}
 
    void CommitSuppressedColumn(ColumnHandle_t) final {}
-   void CommitPage(ColumnHandle_t, const RPage &page) final { fNBytesCurrentCluster += page.GetNBytes(); }
+   void CommitPage(ColumnHandle_t, const ROOT::Internal::RPage &page) final
+   {
+      fNBytesCurrentCluster += page.GetNBytes();
+   }
    void CommitSealedPage(ROOT::DescriptorId_t, const RSealedPage &page) final
    {
       fNBytesCurrentCluster += page.GetBufferSize();

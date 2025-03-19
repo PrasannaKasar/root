@@ -68,7 +68,7 @@ std::string GetNormalizedTemplateArg(const std::string &arg, F fnTypeNormalizer)
 
    if (std::isdigit(arg[0]) || arg[0] == '-') {
       // Integer template argument
-      return ROOT::Experimental::Internal::GetNormalizedInteger(arg);
+      return ROOT::Internal::GetNormalizedInteger(arg);
    }
 
    std::string qualifier;
@@ -122,7 +122,7 @@ std::vector<AnglePos> FindTemplateAngleBrackets(const std::string &typeName)
 
 } // namespace
 
-std::string ROOT::Experimental::Internal::GetCanonicalTypePrefix(const std::string &typeName)
+std::string ROOT::Internal::GetCanonicalTypePrefix(const std::string &typeName)
 {
    std::string canonicalType{TClassEdit::CleanType(typeName.c_str(), /*mode=*/1)};
    if (canonicalType.substr(0, 7) == "struct ") {
@@ -222,7 +222,7 @@ std::string ROOT::Experimental::Internal::GetCanonicalTypePrefix(const std::stri
    return canonicalType;
 }
 
-std::string ROOT::Experimental::Internal::GetRenormalizedTypeName(const std::string &metaNormalizedName)
+std::string ROOT::Internal::GetRenormalizedTypeName(const std::string &metaNormalizedName)
 {
    const std::string canonicalTypePrefix{GetCanonicalTypePrefix(metaNormalizedName)};
    // RNTuple resolves Double32_t for the normalized type name but keeps Double32_t for the type alias
@@ -264,7 +264,7 @@ std::string ROOT::Experimental::Internal::GetRenormalizedTypeName(const std::str
    return normName;
 }
 
-std::string ROOT::Experimental::Internal::GetNormalizedUnresolvedTypeName(const std::string &origName)
+std::string ROOT::Internal::GetNormalizedUnresolvedTypeName(const std::string &origName)
 {
    const TClassEdit::EModType modType = static_cast<TClassEdit::EModType>(
       TClassEdit::kDropStlDefault | TClassEdit::kDropComparator | TClassEdit::kDropHash);
@@ -332,19 +332,19 @@ std::string ROOT::Experimental::Internal::GetNormalizedUnresolvedTypeName(const 
    return normName;
 }
 
-std::string ROOT::Experimental::Internal::GetNormalizedInteger(long long val)
+std::string ROOT::Internal::GetNormalizedInteger(long long val)
 {
    return std::to_string(val);
 }
 
-std::string ROOT::Experimental::Internal::GetNormalizedInteger(unsigned long long val)
+std::string ROOT::Internal::GetNormalizedInteger(unsigned long long val)
 {
    if (val > std::numeric_limits<std::int64_t>::max())
       return std::to_string(val) + "u";
    return std::to_string(val);
 }
 
-std::string ROOT::Experimental::Internal::GetNormalizedInteger(const std::string &intTemplateArg)
+std::string ROOT::Internal::GetNormalizedInteger(const std::string &intTemplateArg)
 {
    R__ASSERT(!intTemplateArg.empty());
    if (intTemplateArg[0] == '-')
@@ -352,7 +352,7 @@ std::string ROOT::Experimental::Internal::GetNormalizedInteger(const std::string
    return GetNormalizedInteger(ParseUIntTypeToken(intTemplateArg));
 }
 
-long long ROOT::Experimental::Internal::ParseIntTypeToken(const std::string &intToken)
+long long ROOT::Internal::ParseIntTypeToken(const std::string &intToken)
 {
    std::size_t nChars = 0;
    long long res = std::stoll(intToken, &nChars);
@@ -374,7 +374,7 @@ long long ROOT::Experimental::Internal::ParseIntTypeToken(const std::string &int
    throw RException(R__FAIL("invalid integer type token: " + intToken));
 }
 
-unsigned long long ROOT::Experimental::Internal::ParseUIntTypeToken(const std::string &uintToken)
+unsigned long long ROOT::Internal::ParseUIntTypeToken(const std::string &uintToken)
 {
    std::size_t nChars = 0;
    unsigned long long res = std::stoull(uintToken, &nChars);
@@ -394,8 +394,7 @@ unsigned long long ROOT::Experimental::Internal::ParseUIntTypeToken(const std::s
    throw RException(R__FAIL("invalid integer type token: " + uintToken));
 }
 
-ROOT::Experimental::Internal::ERNTupleSerializationMode
-ROOT::Experimental::Internal::GetRNTupleSerializationMode(TClass *cl)
+ROOT::Internal::ERNTupleSerializationMode ROOT::Internal::GetRNTupleSerializationMode(TClass *cl)
 {
    auto am = cl->GetAttributeMap();
    if (!am || !am->HasKey("rntuple.streamerMode"))
@@ -414,8 +413,7 @@ ROOT::Experimental::Internal::GetRNTupleSerializationMode(TClass *cl)
    }
 }
 
-std::tuple<std::string, std::vector<std::size_t>>
-ROOT::Experimental::Internal::ParseArrayType(const std::string &typeName)
+std::tuple<std::string, std::vector<std::size_t>> ROOT::Internal::ParseArrayType(const std::string &typeName)
 {
    std::vector<std::size_t> sizeVec;
 
@@ -439,7 +437,7 @@ ROOT::Experimental::Internal::ParseArrayType(const std::string &typeName)
    return std::make_tuple(prefix, sizeVec);
 }
 
-std::vector<std::string> ROOT::Experimental::Internal::TokenizeTypeList(std::string_view templateType)
+std::vector<std::string> ROOT::Internal::TokenizeTypeList(std::string_view templateType)
 {
    std::vector<std::string> result;
    if (templateType.empty())

@@ -30,7 +30,7 @@ public:
    } fCounters{};
 
 protected:
-   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, ROOT::Experimental::Internal::RColumn &) final { return {}; }
+   ColumnHandle_t AddColumn(ROOT::DescriptorId_t, ROOT::Internal::RColumn &) final { return {}; }
 
    const RNTupleDescriptor &GetDescriptor() const final
    {
@@ -1112,7 +1112,7 @@ TEST(RPageSinkFile, StreamerInfo)
 
    auto model = RNTupleModel::Create();
    model->MakeField<CustomStruct>("f1");
-   model->AddField(std::make_unique<ROOT::Experimental::RStreamerField>("f2", "StructWithArrays"));
+   model->AddField(std::make_unique<ROOT::RStreamerField>("f2", "StructWithArrays"));
    auto writer = RNTupleWriter::Recreate(std::move(model), "ntpl", fileGuard.GetPath());
    writer->Fill(); // need one entry to trigger streamer info record for streamer field
    writer.reset();

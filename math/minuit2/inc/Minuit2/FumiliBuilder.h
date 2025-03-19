@@ -40,9 +40,10 @@ section 5
 class FumiliBuilder : public MinimumBuilder {
 
 public:
-   FumiliBuilder() : fEstimator(VariableMetricEDMEstimator()), fErrorUpdator(FumiliErrorUpdator()) {}
 
-   ~FumiliBuilder() override {}
+   enum FumiliMethodType { kLineSearch = 0, kTrustRegion = 1, kTrustRegionScaled = 2};
+
+   void SetMethod(FumiliMethodType type) { fMethodType = type;}
 
    /**
 
@@ -131,6 +132,7 @@ public:
 private:
    VariableMetricEDMEstimator fEstimator;
    FumiliErrorUpdator fErrorUpdator;
+   FumiliMethodType fMethodType = kTrustRegion;   // use Trust region as default method
 };
 
 } // namespace Minuit2

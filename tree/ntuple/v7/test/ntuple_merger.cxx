@@ -820,7 +820,7 @@ static bool VerifyPageCompression(const std::string_view fileName, std::uint32_t
    source->Attach();
    auto descriptor = source->GetSharedDescriptorGuard();
    const auto &columnDesc = descriptor->GetColumnDescriptor(0);
-   const auto colElement = ROOT::Experimental::Internal::RColumnElementBase::Generate(columnDesc.GetType());
+   const auto colElement = ROOT::Internal::RColumnElementBase::Generate(columnDesc.GetType());
    ROOT::Experimental::Internal::RPageStorage::RSealedPage sealedPage;
    source->LoadSealedPage(0, {0, 0}, sealedPage);
    auto buffer = MakeUninitArray<unsigned char>(sealedPage.GetBufferSize());
@@ -1244,7 +1244,7 @@ TEST(RNTupleMerger, MultipleRepresentations)
       *ptrPx = 1.0;
       writer->Fill();
       writer->CommitCluster();
-      ROOT::Experimental::Internal::RFieldRepresentationModifier::SetPrimaryColumnRepresentation(
+      ROOT::Internal::RFieldRepresentationModifier::SetPrimaryColumnRepresentation(
          const_cast<RFieldBase &>(writer->GetModel().GetConstField("px")), 1);
       *ptrPx = 2.0;
       writer->Fill();
@@ -2840,7 +2840,6 @@ TEST(RNTupleMerger, MergeFirstEmptySchema)
 {
    // Try merging two ntuples, the first of which has an empty schema
    FileRaii fileGuard1("test_ntuple_merge_firstempty_1.root");
-   fileGuard1.PreserveFile();
    {
       auto model = RNTupleModel::Create();
       auto ntuple = RNTupleWriter::Recreate(std::move(model), "ntuple", fileGuard1.GetPath());
@@ -2926,7 +2925,6 @@ TEST(RNTupleMerger, MergeSecondEmptySchema)
 {
    // Try merging two ntuples, the second of which has an empty schema
    FileRaii fileGuard1("test_ntuple_merge_secondempty_1.root");
-   fileGuard1.PreserveFile();
    {
       auto model = RNTupleModel::Create();
       auto pi = model->MakeField<int>("int");

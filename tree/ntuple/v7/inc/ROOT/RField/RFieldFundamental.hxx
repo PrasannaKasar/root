@@ -37,6 +37,8 @@ namespace Detail {
 class RFieldVisitor;
 } // namespace Detail
 
+} // namespace Experimental
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Template specializations for concrete C++ fundamental types
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +78,7 @@ public:
    RField &operator=(RField &&other) = default;
    ~RField() final = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<char>;
@@ -98,7 +100,7 @@ public:
    RField &operator=(RField &&other) = default;
    ~RField() final = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 // For other integral types, we introduce an intermediate RIntegralField. It is specialized for fixed-width integer
@@ -125,7 +127,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::uint8_t>;
@@ -142,7 +144,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::int16_t>;
@@ -159,7 +161,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::uint16_t>;
@@ -176,7 +178,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::int32_t>;
@@ -193,7 +195,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::uint32_t>;
@@ -210,7 +212,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::int64_t>;
@@ -227,7 +229,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 extern template class RSimpleField<std::uint64_t>;
@@ -244,7 +246,7 @@ public:
    RIntegralField &operator=(RIntegralField &&other) = default;
    ~RIntegralField() override = default;
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 namespace Internal {
@@ -377,7 +379,7 @@ protected:
       const auto n = r.size();
       fAvailableColumns.reserve(n);
       for (std::uint16_t i = 0; i < n; ++i) {
-         auto &column = fAvailableColumns.emplace_back(Internal::RColumn::Create<T>(r[i][0], 0, i));
+         auto &column = fAvailableColumns.emplace_back(ROOT::Internal::RColumn::Create<T>(r[i][0], 0, i));
          if (r[i][0] == ROOT::ENTupleColumnType::kReal32Trunc) {
             column->SetBitsOnStorage(fBitWidth);
          } else if (r[i][0] == ROOT::ENTupleColumnType::kReal32Quant) {
@@ -388,7 +390,7 @@ protected:
       fPrincipalColumn = fAvailableColumns[0].get();
    }
 
-   void GenerateColumns(const RNTupleDescriptor &desc) final
+   void GenerateColumns(const ROOT::Experimental::RNTupleDescriptor &desc) final
    {
       std::uint16_t representationIndex = 0;
       do {
@@ -397,7 +399,7 @@ protected:
             break;
 
          auto &column =
-            fAvailableColumns.emplace_back(Internal::RColumn::Create<T>(onDiskTypes[0], 0, representationIndex));
+            fAvailableColumns.emplace_back(ROOT::Internal::RColumn::Create<T>(onDiskTypes[0], 0, representationIndex));
          if (onDiskTypes[0] == ROOT::ENTupleColumnType::kReal32Trunc) {
             const auto &fdesc = desc.GetFieldDescriptor(Base::GetOnDiskId());
             const auto &coldesc = desc.GetColumnDescriptor(fdesc.GetLogicalColumnIds()[0]);
@@ -443,7 +445,7 @@ public:
    void SetTruncated(std::size_t nBits)
    {
       const auto &[minBits, maxBits] =
-         Internal::RColumnElementBase::GetValidBitRange(ROOT::ENTupleColumnType::kReal32Trunc);
+         ROOT::Internal::RColumnElementBase::GetValidBitRange(ROOT::ENTupleColumnType::kReal32Trunc);
       if (nBits < minBits || nBits > maxBits) {
          throw RException(R__FAIL("SetTruncated() argument nBits = " + std::to_string(nBits) +
                                   " is out of valid range [" + std::to_string(minBits) + ", " +
@@ -464,7 +466,7 @@ public:
    void SetQuantized(double minValue, double maxValue, std::size_t nBits)
    {
       const auto &[minBits, maxBits] =
-         Internal::RColumnElementBase::GetValidBitRange(ROOT::ENTupleColumnType::kReal32Quant);
+         ROOT::Internal::RColumnElementBase::GetValidBitRange(ROOT::ENTupleColumnType::kReal32Quant);
       if (nBits < minBits || nBits > maxBits) {
          throw RException(R__FAIL("SetQuantized() argument nBits = " + std::to_string(nBits) +
                                   " is out of valid range [" + std::to_string(minBits) + ", " +
@@ -493,7 +495,7 @@ public:
 
    explicit RField(std::string_view name) : RRealField<float>(name, TypeName()) {}
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 template <>
@@ -512,12 +514,19 @@ public:
 
    explicit RField(std::string_view name) : RRealField<double>(name, TypeName()) {}
 
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 
    // Set the column representation to 32 bit floating point and the type alias to Double32_t
    void SetDouble32();
 };
+
+namespace Experimental {
+// TODO(gparolini): remove before branching ROOT v6.36
+template <typename T>
+using RIntegralField [[deprecated("ROOT::Experimental::RIntegralField moved to ROOT::RIntegralField")]] =
+   ROOT::RIntegralField<T>;
 } // namespace Experimental
+
 } // namespace ROOT
 
 #endif

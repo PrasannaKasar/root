@@ -266,7 +266,7 @@ AddReal32QuantField(RNTupleModel &model, const std::string &fieldName, std::size
 namespace {
 
 // Test writing index32/64 columns
-class RFieldTestIndexColumn final : public ROOT::Experimental::RSimpleField<RColumnIndex> {
+class RFieldTestIndexColumn final : public ROOT::RSimpleField<RColumnIndex> {
 protected:
    std::unique_ptr<RFieldBase> CloneImpl(std::string_view newName) const final
    {
@@ -280,10 +280,7 @@ protected:
    }
 
 public:
-   explicit RFieldTestIndexColumn(std::string_view name)
-      : RSimpleField(name, "ROOT::Experimental::Internal::RColumnIndex")
-   {
-   }
+   explicit RFieldTestIndexColumn(std::string_view name) : RSimpleField(name, "ROOT::Internal::RColumnIndex") {}
    RFieldTestIndexColumn(RFieldTestIndexColumn &&other) = default;
    RFieldTestIndexColumn &operator=(RFieldTestIndexColumn &&other) = default;
    ~RFieldTestIndexColumn() override = default;
@@ -443,7 +440,7 @@ TEST(Packing, OnDiskEncoding)
 
 TEST(Packing, Real32TruncFloat)
 {
-   namespace BitPacking = ROOT::Experimental::Internal::BitPacking;
+   namespace BitPacking = ROOT::Internal::BitPacking;
    {
       constexpr auto kBitsOnStorage = 10;
       RColumnElement<float, ENTupleColumnType::kReal32Trunc> element;
@@ -602,7 +599,7 @@ TEST(Packing, Real32TruncFloat)
 
 TEST(Packing, Real32TruncDouble)
 {
-   namespace BitPacking = ROOT::Experimental::Internal::BitPacking;
+   namespace BitPacking = ROOT::Internal::BitPacking;
    {
       constexpr auto kBitsOnStorage = 10;
       RColumnElement<double, ENTupleColumnType::kReal32Trunc> element;
@@ -834,7 +831,7 @@ TEST(Packing, RealQuantize)
 
 TEST(Packing, Real32QuantFloat)
 {
-   namespace BitPacking = ROOT::Experimental::Internal::BitPacking;
+   namespace BitPacking = ROOT::Internal::BitPacking;
    {
       constexpr auto kBitsOnStorage = 10;
       RColumnElement<float, ENTupleColumnType::kReal32Quant> element;
@@ -866,7 +863,7 @@ TEST(Packing, Real32QuantFloat)
       element.SetBitsOnStorage(20);
       element.SetValueRange(-10.f, 10.f);
 
-      float f[5] = { 3.4f, 5.f, -6.f, 10.f, -10.f };
+      float f[5] = {3.4f, 5.f, -6.f, 10.f, -10.f};
       unsigned char out[BitPacking::MinBufSize(std::size(f), 20)];
       element.Pack(out, f, std::size(f));
       float f2[std::size(f)];
@@ -959,7 +956,7 @@ TEST(Packing, Real32QuantFloat)
 
 TEST(Packing, Real32QuantDouble)
 {
-   namespace BitPacking = ROOT::Experimental::Internal::BitPacking;
+   namespace BitPacking = ROOT::Internal::BitPacking;
    {
       constexpr auto kBitsOnStorage = 10;
       RColumnElement<double, ENTupleColumnType::kReal32Quant> element;

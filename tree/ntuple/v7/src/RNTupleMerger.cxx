@@ -41,6 +41,8 @@
 
 using ROOT::ENTupleColumnType;
 using ROOT::Internal::MakeUninitArray;
+using ROOT::Internal::RColumnElementBase;
+
 using namespace ROOT::Experimental;
 using namespace ROOT::Experimental::Internal;
 
@@ -246,7 +248,7 @@ struct RChangeCompressionFunc {
    const RNTupleMergeOptions &fMergeOptions;
 
    RPageStorage::RSealedPage &fSealedPage;
-   RPageAllocator &fPageAlloc;
+   ROOT::Internal::RPageAllocator &fPageAlloc;
    std::uint8_t *fBuffer;
 
    void operator()() const
@@ -699,10 +701,11 @@ void RNTupleMerger::MergeCommonColumns(RClusterPool &clusterPool, const RCluster
 
       const auto &columnDesc = mergeData.fSrcDescriptor->GetColumnDescriptor(columnId);
       const auto srcColElement = column.fInMemoryType
-                                    ? GenerateColumnElement(*column.fInMemoryType, columnDesc.GetType())
+                                    ? ROOT::Internal::GenerateColumnElement(*column.fInMemoryType, columnDesc.GetType())
                                     : RColumnElementBase::Generate(columnDesc.GetType());
-      const auto dstColElement = column.fInMemoryType ? GenerateColumnElement(*column.fInMemoryType, column.fColumnType)
-                                                      : RColumnElementBase::Generate(column.fColumnType);
+      const auto dstColElement = column.fInMemoryType
+                                    ? ROOT::Internal::GenerateColumnElement(*column.fInMemoryType, column.fColumnType)
+                                    : RColumnElementBase::Generate(column.fColumnType);
 
       // Now get the pages for this column in this cluster
       const auto &pages = clusterDesc.GetPageRange(columnId);
@@ -864,10 +867,10 @@ static std::optional<std::type_index> ColumnInMemoryType(std::string_view fieldT
 {
    if (onDiskType == ENTupleColumnType::kIndex32 || onDiskType == ENTupleColumnType::kSplitIndex32 ||
        onDiskType == ENTupleColumnType::kIndex64 || onDiskType == ENTupleColumnType::kSplitIndex64)
-      return typeid(ROOT::Experimental::Internal::RColumnIndex);
+      return typeid(ROOT::Internal::RColumnIndex);
 
    if (onDiskType == ENTupleColumnType::kSwitch)
-      return typeid(ROOT::Experimental::Internal::RColumnSwitch);
+      return typeid(ROOT::Internal::RColumnSwitch);
 
    // clang-format off
    if (fieldType == "bool")          return typeid(bool);
@@ -992,7 +995,9 @@ GatherColumnInfos(const RDescriptorsComparison &descCmp, const RNTupleDescriptor
 RNTupleMerger::RNTupleMerger(std::unique_ptr<RPagePersistentSink> destination, std::unique_ptr<RNTupleModel> model)
    // TODO(gparolini): consider using an arena allocator instead, since we know the precise lifetime
    // of the RNTuples we are going to handle (e.g. we can reset the arena at every source)
-   : fDestination(std::move(destination)), fPageAlloc(std::make_unique<RPageAllocatorHeap>()), fModel(std::move(model))
+   : fDestination(std::move(destination)),
+     fPageAlloc(std::make_unique<ROOT::Internal::RPageAllocatorHeap>()),
+     fModel(std::move(model))
 {
    R__ASSERT(fDestination);
 

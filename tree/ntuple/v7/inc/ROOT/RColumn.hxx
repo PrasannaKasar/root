@@ -28,11 +28,11 @@
 #include <memory>
 #include <utility>
 
-namespace ROOT::Experimental::Internal {
+namespace ROOT::Internal {
 
 // clang-format off
 /**
-\class ROOT::Experimental::Internal::RColumn
+\class ROOT::Internal::RColumn
 \ingroup NTuple
 \brief A column is a storage-backed array of a simple, fixed-size type, from which pages can be mapped into memory.
 */
@@ -45,27 +45,27 @@ private:
    std::uint32_t fIndex;
    /// Fields can have multiple column representations, distinguished by representation index
    std::uint16_t fRepresentationIndex;
-   RPageSink *fPageSink = nullptr;
-   RPageSource *fPageSource = nullptr;
-   RPageStorage::ColumnHandle_t fHandleSink;
-   RPageStorage::ColumnHandle_t fHandleSource;
+   ROOT::Experimental::Internal::RPageSink *fPageSink = nullptr;
+   ROOT::Experimental::Internal::RPageSource *fPageSource = nullptr;
+   ROOT::Experimental::Internal::RPageStorage::ColumnHandle_t fHandleSink;
+   ROOT::Experimental::Internal::RPageStorage::ColumnHandle_t fHandleSource;
    /// The page into which new elements are being written. The page will initially be small
    /// (RNTupleWriteOptions::fInitialUnzippedPageSize, which corresponds to fInitialElements) and expand as needed and
    /// as memory for page buffers is still available (RNTupleWriteOptions::fPageBufferBudget) or the maximum page
    /// size is reached (RNTupleWriteOptions::fMaxUnzippedPageSize).
-   RPage fWritePage;
+   ROOT::Internal::RPage fWritePage;
    /// The initial number of elements in a page
    ROOT::NTupleSize_t fInitialNElements = 1;
    /// The number of elements written resp. available in the column
    ROOT::NTupleSize_t fNElements = 0;
    /// The currently mapped page for reading
-   RPageRef fReadPageRef;
+   ROOT::Internal::RPageRef fReadPageRef;
    /// The column id in the column descriptor, once connected to a sink or source
    ROOT::DescriptorId_t fOnDiskId = ROOT::kInvalidDescriptorId;
    /// Global index of the first element in this column; usually == 0, unless it is a deferred column
    ROOT::NTupleSize_t fFirstElementIndex = 0;
    /// Used to pack and unpack pages on writing/reading
-   std::unique_ptr<RColumnElementBase> fElement;
+   std::unique_ptr<ROOT::Internal::RColumnElementBase> fElement;
    /// The column team is a set of columns that serve the same column index for different representation IDs.
    /// Initially, the team has only one member, the very column it belongs to. Through MergeTeams(), two columns
    /// can join forces. The team is used to react on suppressed columns: if the current team member has a suppressed
@@ -109,7 +109,7 @@ public:
    Create(ROOT::ENTupleColumnType type, std::uint32_t columnIdx, std::uint16_t representationIdx)
    {
       auto column = std::unique_ptr<RColumn>(new RColumn(type, columnIdx, representationIdx));
-      column->fElement = RColumnElementBase::Generate<CppT>(type);
+      column->fElement = ROOT::Internal::RColumnElementBase::Generate<CppT>(type);
       return column;
    }
 
@@ -120,9 +120,10 @@ public:
    /// Connect the column to a page sink.  `firstElementIndex` can be used to specify the first column element index
    /// with backing storage for this column.  On read back, elements before `firstElementIndex` will cause the zero page
    /// to be mapped.
-   void ConnectPageSink(ROOT::DescriptorId_t fieldId, RPageSink &pageSink, ROOT::NTupleSize_t firstElementIndex = 0U);
+   void ConnectPageSink(ROOT::DescriptorId_t fieldId, ROOT::Experimental::Internal::RPageSink &pageSink,
+                        ROOT::NTupleSize_t firstElementIndex = 0U);
    /// Connect the column to a page source.
-   void ConnectPageSource(ROOT::DescriptorId_t fieldId, RPageSource &pageSource);
+   void ConnectPageSource(ROOT::DescriptorId_t fieldId, ROOT::Experimental::Internal::RPageSource &pageSource);
 
    void Append(const void *from)
    {
@@ -289,17 +290,17 @@ public:
       // Try to avoid jumping back to the previous page and jumping back to the previous cluster
       if (R__likely(globalIndex > 0)) {
          if (R__likely(fReadPageRef.Get().Contains(globalIndex - 1))) {
-            idxStart = *Map<RColumnIndex>(globalIndex - 1);
-            idxEnd = *Map<RColumnIndex>(globalIndex);
+            idxStart = *Map<ROOT::Internal::RColumnIndex>(globalIndex - 1);
+            idxEnd = *Map<ROOT::Internal::RColumnIndex>(globalIndex);
             if (R__unlikely(fReadPageRef.Get().GetClusterInfo().GetIndexOffset() == globalIndex))
                idxStart = 0;
          } else {
-            idxEnd = *Map<RColumnIndex>(globalIndex);
+            idxEnd = *Map<ROOT::Internal::RColumnIndex>(globalIndex);
             auto selfOffset = fReadPageRef.Get().GetClusterInfo().GetIndexOffset();
-            idxStart = (globalIndex == selfOffset) ? 0 : *Map<RColumnIndex>(globalIndex - 1);
+            idxStart = (globalIndex == selfOffset) ? 0 : *Map<ROOT::Internal::RColumnIndex>(globalIndex - 1);
          }
       } else {
-         idxEnd = *Map<RColumnIndex>(globalIndex);
+         idxEnd = *Map<ROOT::Internal::RColumnIndex>(globalIndex);
       }
       *collectionSize = idxEnd - idxStart;
       *collectionStart = RNTupleLocalIndex(fReadPageRef.Get().GetClusterInfo().GetId(), idxStart);
@@ -309,8 +310,8 @@ public:
                           ROOT::NTupleSize_t *collectionSize)
    {
       auto index = localIndex.GetIndexInCluster();
-      auto idxStart = (index == 0) ? 0 : *Map<RColumnIndex>(localIndex - 1);
-      auto idxEnd = *Map<RColumnIndex>(localIndex);
+      auto idxStart = (index == 0) ? 0 : *Map<ROOT::Internal::RColumnIndex>(localIndex - 1);
+      auto idxEnd = *Map<ROOT::Internal::RColumnIndex>(localIndex);
       *collectionSize = idxEnd - idxStart;
       *collectionStart = RNTupleLocalIndex(localIndex.GetClusterId(), idxStart);
    }
@@ -318,7 +319,7 @@ public:
    /// Get the currently active cluster id
    void GetSwitchInfo(ROOT::NTupleSize_t globalIndex, RNTupleLocalIndex *varIndex, std::uint32_t *tag)
    {
-      auto varSwitch = Map<RColumnSwitch>(globalIndex);
+      auto varSwitch = Map<ROOT::Internal::RColumnSwitch>(globalIndex);
       *varIndex = RNTupleLocalIndex(fReadPageRef.Get().GetClusterInfo().GetId(), varSwitch->GetIndex());
       *tag = varSwitch->GetTag();
    }
@@ -337,7 +338,7 @@ public:
    void MergeTeams(RColumn &other);
 
    ROOT::NTupleSize_t GetNElements() const { return fNElements; }
-   RColumnElementBase *GetElement() const { return fElement.get(); }
+   ROOT::Internal::RColumnElementBase *GetElement() const { return fElement.get(); }
    ROOT::ENTupleColumnType GetType() const { return fType; }
    std::uint16_t GetBitsOnStorage() const
    {
@@ -353,16 +354,16 @@ public:
    std::uint16_t GetRepresentationIndex() const { return fRepresentationIndex; }
    ROOT::DescriptorId_t GetOnDiskId() const { return fOnDiskId; }
    ROOT::NTupleSize_t GetFirstElementIndex() const { return fFirstElementIndex; }
-   RPageSource *GetPageSource() const { return fPageSource; }
-   RPageSink *GetPageSink() const { return fPageSink; }
-   RPageStorage::ColumnHandle_t GetHandleSource() const { return fHandleSource; }
-   RPageStorage::ColumnHandle_t GetHandleSink() const { return fHandleSink; }
+   ROOT::Experimental::Internal::RPageSource *GetPageSource() const { return fPageSource; }
+   ROOT::Experimental::Internal::RPageSink *GetPageSink() const { return fPageSink; }
+   ROOT::Experimental::Internal::RPageStorage::ColumnHandle_t GetHandleSource() const { return fHandleSource; }
+   ROOT::Experimental::Internal::RPageStorage::ColumnHandle_t GetHandleSink() const { return fHandleSink; }
 
    void SetBitsOnStorage(std::size_t bits) { fElement->SetBitsOnStorage(bits); }
    std::size_t GetWritePageCapacity() const { return fWritePage.GetCapacity(); }
    void SetValueRange(double min, double max) { fElement->SetValueRange(min, max); }
 }; // class RColumn
 
-} // namespace ROOT::Experimental::Internal
+} // namespace ROOT::Internal
 
 #endif

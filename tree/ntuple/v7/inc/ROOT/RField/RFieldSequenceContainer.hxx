@@ -29,7 +29,6 @@
 #include <vector>
 
 namespace ROOT {
-namespace Experimental {
 
 namespace Detail {
 class RFieldVisitor;
@@ -79,7 +78,7 @@ public:
    size_t GetLength() const { return fArrayLength; }
    size_t GetValueSize() const final { return fItemSize * fArrayLength; }
    size_t GetAlignment() const final { return fSubfields[0]->GetAlignment(); }
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
 template <typename ItemT, std::size_t N>
@@ -128,13 +127,13 @@ public:
 
 protected:
    std::size_t fItemSize;
-   Internal::RColumnIndex fNWritten;
+   ROOT::Internal::RColumnIndex fNWritten;
    std::size_t fValueSize;
 
    std::unique_ptr<RFieldBase> CloneImpl(std::string_view newName) const final;
    const RColumnRepresentations &GetColumnRepresentations() const final;
    void GenerateColumns() final;
-   void GenerateColumns(const RNTupleDescriptor &desc) final;
+   void GenerateColumns(const ROOT::Experimental::RNTupleDescriptor &desc) final;
 
    void ConstructValue(void *where) const final;
    std::unique_ptr<RDeleter> GetDeleter() const final;
@@ -156,7 +155,7 @@ public:
    std::vector<RValue> SplitValue(const RValue &value) const final;
    size_t GetValueSize() const final;
    size_t GetAlignment() const final;
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
    void
    GetCollectionInfo(ROOT::NTupleSize_t globalIndex, RNTupleLocalIndex *collectionStart, ROOT::NTupleSize_t *size) const
    {
@@ -208,7 +207,7 @@ private:
    };
 
    std::size_t fItemSize;
-   Internal::RColumnIndex fNWritten;
+   ROOT::Internal::RColumnIndex fNWritten;
    std::unique_ptr<RDeleter> fItemDeleter;
 
 protected:
@@ -218,7 +217,7 @@ protected:
 
    const RColumnRepresentations &GetColumnRepresentations() const final;
    void GenerateColumns() final;
-   void GenerateColumns(const RNTupleDescriptor &desc) final;
+   void GenerateColumns(const ROOT::Experimental::RNTupleDescriptor &desc) final;
 
    void ConstructValue(void *where) const final { new (where) std::vector<char>(); }
    std::unique_ptr<RDeleter> GetDeleter() const final;
@@ -240,7 +239,7 @@ public:
    std::vector<RValue> SplitValue(const RValue &value) const final;
    size_t GetValueSize() const final { return sizeof(std::vector<char>); }
    size_t GetAlignment() const final { return std::alignment_of<std::vector<char>>(); }
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
    void
    GetCollectionInfo(ROOT::NTupleSize_t globalIndex, RNTupleLocalIndex *collectionStart, ROOT::NTupleSize_t *size) const
    {
@@ -267,7 +266,7 @@ public:
 template <>
 class RField<std::vector<bool>> final : public RFieldBase {
 private:
-   Internal::RColumnIndex fNWritten{0};
+   ROOT::Internal::RColumnIndex fNWritten{0};
 
 protected:
    std::unique_ptr<RFieldBase> CloneImpl(std::string_view newName) const final
@@ -277,7 +276,7 @@ protected:
 
    const RColumnRepresentations &GetColumnRepresentations() const final;
    void GenerateColumns() final;
-   void GenerateColumns(const RNTupleDescriptor &desc) final;
+   void GenerateColumns(const ROOT::Experimental::RNTupleDescriptor &desc) final;
 
    void ConstructValue(void *where) const final { new (where) std::vector<bool>(); }
    std::unique_ptr<RDeleter> GetDeleter() const final { return std::make_unique<RTypedDeleter<std::vector<bool>>>(); }
@@ -298,7 +297,7 @@ public:
 
    size_t GetValueSize() const final { return sizeof(std::vector<bool>); }
    size_t GetAlignment() const final { return std::alignment_of<std::vector<bool>>(); }
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
    void
    GetCollectionInfo(ROOT::NTupleSize_t globalIndex, RNTupleLocalIndex *collectionStart, ROOT::NTupleSize_t *size) const
    {
@@ -359,10 +358,18 @@ public:
    std::size_t GetAlignment() const final;
 
    std::vector<RFieldBase::RValue> SplitValue(const RFieldBase::RValue &value) const final;
-   void AcceptVisitor(Detail::RFieldVisitor &visitor) const final;
+   void AcceptVisitor(ROOT::Detail::RFieldVisitor &visitor) const final;
 };
 
+namespace Experimental {
+// TODO(gparolini): remove before branching ROOT v6.36
+using RArrayField [[deprecated("ROOT::Experimental::RArrayField moved to ROOT::RArrayField")]] = ROOT::RArrayField;
+using RVectorField [[deprecated("ROOT::Experimental::RVectorField moved to ROOT::RVectorField")]] = ROOT::RVectorField;
+using RRVecField [[deprecated("ROOT::Experimental::RRVecField moved to ROOT::RRVecField")]] = ROOT::RRVecField;
+using RArrayAsRVecField [[deprecated("ROOT::Experimental::RArrayAsRVecField moved to ROOT::RArrayAsRVecField")]] =
+   ROOT::RArrayAsRVecField;
 } // namespace Experimental
+
 } // namespace ROOT
 
 #endif

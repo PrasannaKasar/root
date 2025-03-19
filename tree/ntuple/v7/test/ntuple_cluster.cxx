@@ -28,9 +28,8 @@ using ROOT::Experimental::RNTupleDescriptor;
 using ROOT::Experimental::Internal::RCluster;
 using ROOT::Experimental::Internal::RClusterPool;
 using ROOT::Experimental::Internal::ROnDiskPage;
-using ROOT::Experimental::Internal::RPage;
-using ROOT::Experimental::Internal::RPageRef;
 using ROOT::Experimental::Internal::RPageSource;
+using ROOT::Internal::RPageRef;
 
 namespace {
 
@@ -344,7 +343,7 @@ TEST(PageStorageFile, LoadClusters)
    EXPECT_EQ(0U, cluster->GetId());
    EXPECT_EQ(0U, cluster->GetNOnDiskPages());
 
-   auto column = ROOT::Experimental::Internal::RColumn::Create<float>(ROOT::ENTupleColumnType::kReal32, 0, 0);
+   auto column = ROOT::Internal::RColumn::Create<float>(ROOT::ENTupleColumnType::kReal32, 0, 0);
    column->ConnectPageSource(ptId, source);
    clusterKeys[0].fClusterId = 1;
    clusterKeys[0].fPhysicalColumnSet.insert(colId);

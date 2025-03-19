@@ -23,6 +23,8 @@
 #include "Minuit2/MnHesse.h"
 #include "Minuit2/MnPrint.h"
 
+#include "Math/Util.h"
+
 #include <cmath>
 #include <cassert>
 
@@ -88,13 +90,13 @@ FunctionMinimum VariableMetricBuilder::Minimum(const MnFcn &fcn, const GradientC
    }
 
    std::vector<MinimumState> result;
-   if (StorageLevel() > 0)
-      result.reserve(10);
-   else
-      result.reserve(2);
+   result.reserve(StorageLevel() > 0 ? 10 : 2);
 
    // do actual iterations
    print.Info("Start iterating until Edm is <", edmval, "with call limit =", maxfcn);
+
+   // print time after returning
+   ROOT::Math::Util::TimingScope timingScope([&print](std::string const &s) { print.Info(s); }, "Stop iterating after");
 
    AddResult(result, seed.State());
 
