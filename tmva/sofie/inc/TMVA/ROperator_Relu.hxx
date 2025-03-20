@@ -66,11 +66,11 @@ public:
       return out.str();
    }
 
-   std::string GetLength() {
+   std::string GetLength() override {
       return ConvertDynamicShapeToLength(fShape);
    }
 
-   std::string GenerateGPUOpenCL(std::string OpName) {
+   std::string GenerateGPUOpenCL(std::string OpName) override {
       OpName = "relu_" + OpName;
   
       if (fShape.empty()) {

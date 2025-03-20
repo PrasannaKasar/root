@@ -390,6 +390,14 @@ namespace SOFIE{
          return out.str();
       }
 
+      // std::string GenerateGPUOpenCL(std::string OpName) override {
+      //    return "";
+      // }
+
+      // std::string GetLength() override {
+      //    return "";
+      // }
+
       std::vector<std::string> GetBlasRoutines() override { return { std::string("Gemm"), std::string("Gemv") }; }
 
    };

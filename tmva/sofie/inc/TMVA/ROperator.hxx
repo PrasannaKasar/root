@@ -37,7 +37,8 @@ public:
 
    //virtual void Forward_reference() = 0;
    //virtual void Forward_blas() = 0;
-   virtual ~ROperator(){}
+   // virtual ~ROperator(){}
+   virtual ~ROperator() = default;
 
 protected:
 

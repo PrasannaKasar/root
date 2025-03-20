@@ -54,6 +54,7 @@ public:
     }
     std::string GenerateModel(const std::string& filename, long read_pos = 0, long block_size = -1);
     std::string Generate(const std::vector<std::string>& inputPtrs);
+    std::string GenerateGPUOpenCL(const std::vector<std::string>& inputPtrs);
     FunctionTarget GetFunctionTarget() {
         return fTarget;
     }
@@ -77,6 +78,8 @@ public:
     }
     std::string Generate(std::size_t num_features, const std::vector<std::string>& inputTensors);
     std::string Generate(std::size_t num_features, const std::string & inputTensors);
+    std::string GenerateGPUOpenCL(std::size_t num_features, const std::vector<std::string>& inputTensors);
+    std::string GenerateGPUOpenCL(std::size_t num_features, const std::string & inputTensors);
 
 };
 

@@ -63,6 +63,33 @@ public:
       return out.str();
    }
 
+   std::string GetLength() override {
+      size_t length = ConvertShapeToLength(fShape);
+      return std::to_string(length); 
+   }
+
+   std::string GenerateGPUOpenCL(std::string OpName) override {
+      OpName = "Tanh";
+  
+      if (fShape.empty()) {
+          throw std::runtime_error("OpenCL error: TMVA SOFIE Operator Tanh called to Generate without being initialized first");
+      }
+  
+      std::stringstream out;
+      size_t length = ConvertShapeToLength(fShape);
+  
+      out << "\n//------ TANH\n";
+      out << "const char* kernelSource = \"__kernel void " << OpName 
+          << "(__global const float* A, __global float* C) {\\n\"\n";
+      out << "\"  int id = get_global_id(0);\\n\"\n";
+      out << "\"  if (id < " << length << ") {\\n\"\n";
+      out << "\"    C[id] = tanh(A[id]);\\n\"\n";
+      out << "\"  }\\n\"\n";
+      out << "\"}\";\n";
+  
+      return out.str();
+  } 
+
    std::vector<std::string> GetStdLibs() override { return { std::string("cmath") };}
 };
 

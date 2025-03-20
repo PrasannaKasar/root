@@ -10,17 +10,9 @@
 
 using namespace TMVA::Experimental;
 
-std::printf("1");
-
-// /home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Linear_16.onnx
-// /home/prasanna/root/tmva/sofie/test/input_models/Linear_16.onnx
-
-
 void TMVA_SOFIE_ONNX(std::string inputFile = ""){
    if (inputFile.empty() )
-      inputFile = "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Linear_16.onnx";
-
-      std::printf("2");
+      inputFile = std::string(gROOT->GetTutorialsDir()) + "/machine_learning/Tanh.onnx";
 
     //Creating parser object to parse ONNX files
     SOFIE::RModelParser_ONNX parser;

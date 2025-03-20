@@ -336,6 +336,14 @@ public:
       return out.str();
    }
 
+   // std::string GenerateGPUOpenCL(std::string OpName) override {
+   //    return "";
+   // }
+
+   // std::string GetLength() override {
+   //    return "";
+   // }
+
    std::vector<std::string> GetBlasRoutines() override { return { std::string("Axpy") }; }
 
    std::vector<std::string> GetStdLibs() override { return { std::string("cmath") }; }

@@ -1346,31 +1346,54 @@ void RModel::Streamer(TBuffer &R__b) {
 }
 
 void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batchSize, long pos, bool verbose) {
+   std::string hgname = fName;
+   std::transform(hgname.begin(), hgname.end(), hgname.begin(), [](unsigned char c) {
+                       return std::toupper(c);
+   } );
+   fGC += "#ifndef ROOT_TMVA_SOFIE_" + hgname + "_GPU \n";
+   fGC += "#define ROOT_TMVA_SOFIE_" + hgname + "_GPU \n";
+   fGC += "\n";
+   fGC += "#include <cmath> \n";
+   fGC += "#include <vector> \n";
+   fGC += "#include \"TMVA/SOFIE_common.hxx\" \n";
    fGC += "#include <CL/cl.h>\n";
    fGC += "#include <stdio.h>\n";
    fGC += "#include <stdlib.h>\n";
    fGC += "#include <math.h>\n";
    fGC += "\n";
+   fGC += "namespace TMVA_SOFIE_" + fName + "_GPU { \n";
+   fGC += "struct Session { \n";
+   fGC += "\n";
    fGC += "// kernel source function \n";
    fGC += "\n";
-   for (size_t i = 0; i < fOperators.size(); ++i) {
-      fGC += fOperators[i]->GenerateGPUOpenCL(std::to_string(i));
-      fGC += ("#define VECTOR_SIZE " + fOperators[i]->GetLength());
-   }
+   fOperators[0]->Initialize(*this);
+   fGC += (fOperators[0]->GenerateGPUOpenCL(std::to_string(0)));
+   // fGC += (fOperators[i]->Generate(std::to_string(i)));
+   std::string length = fOperators[0]->GetLength();
+   fGC += ("#define VECTOR_SIZE " + length);
+   fGC += "\n";
+   fGC += "char* fIntermediateMemoryPool = new char[" + length + "*4" + "]; \n";
+   fGC += "float* C = reinterpret_cast<float*>(fIntermediateMemoryPool + 0); \n";
+   fGC += "\n";
+   fGC += "Session(std::string = \"\") { \n";
+   fGC += "  //---- allocate the intermediate dynamic tensors \n";
+   fGC += "} \n";
+   fGC += "std::vector<float> infer(float* tensor_input) { \n";
+   fGC += "float* A = tensor_input; \n";
    fGC += "\n";
    fGC += "cl_int err;\n";
    fGC += "cl_uint numPlatforms;\n";
    fGC += "err = clGetPlatformIDs(0, NULL, &numPlatforms);\n";
    fGC += "if (err != CL_SUCCESS || numPlatforms == 0) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to find any OpenCL platforms. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
-   fGC += "cl_platform_id *platforms = malloc(numPlatforms * sizeof(cl_platform_id));\n";
+   fGC += "cl_platform_id *platforms = (cl_platform_id *)malloc(numPlatforms * sizeof(cl_platform_id));\n";
    fGC += "err = clGetPlatformIDs(numPlatforms, platforms, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to get OpenCL platform IDs. Error code %d\\n\", err);\n";
    fGC += "   free(platforms);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "// Use the first available platform\n";
    fGC += "cl_platform_id platform = platforms[0];\n";
@@ -1380,13 +1403,13 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to get an OpenCL device. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to create a context. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Use clCreateCommandQueueWithProperties instead of deprecated clCreateCommandQueue\n";
@@ -1394,7 +1417,7 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to create a command queue. Error code %d\\n\", err);\n";
    fGC += "   clReleaseContext(context);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Create buffers\n";
@@ -1404,20 +1427,20 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "   fprintf(stderr, \"Error: Failed to create buffers. Error code %d\\n\", err);\n";
    fGC += "   clReleaseCommandQueue(queue);\n";
    fGC += "   clReleaseContext(context);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Write data to device buffers\n";
    fGC += "err = clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), A, 0, NULL, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to write to bufferA. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "// Create and build program\n";
    fGC += "cl_program program = clCreateProgramWithSource(context, 1, &kernelSource, NULL, &err);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to create program. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
@@ -1428,17 +1451,15 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "   clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);\n";
    fGC += "   fprintf(stderr, \"Error: Failed to build program. Build log:\\n%s\\n\", log);\n";
    fGC += "   free(log);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Create kernel\n";
-   for (size_t i = 0; i < fOperators.size(); ++i) {
-       fGC += "   std::string kernelName = relu; \n";
-   }
-   fGC += "cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err)";
+   fGC += "   std::string kernelName = \"" + fName + "\"; \n";
+   fGC += "cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err); \n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to create kernel. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Set kernel arguments\n";
@@ -1446,7 +1467,7 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferC);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to set kernel arguments. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Enqueue kernel execution\n";
@@ -1454,7 +1475,7 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to enqueue kernel. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    fGC += "// Ensure that all operations are complete\n";
@@ -1464,7 +1485,7 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "err = clEnqueueReadBuffer(queue, bufferC, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), C, 0, NULL, NULL);\n";
    fGC += "if (err != CL_SUCCESS) {\n";
    fGC += "   fprintf(stderr, \"Error: Failed to read bufferC. Error code %d\\n\", err);\n";
-   fGC += "   return EXIT_FAILURE;\n";
+   fGC += "   return std::vector<float> {};\n";
    fGC += "}\n";
    fGC += "\n";
    // fGC += "// Print the first 10 results\n";
@@ -1478,7 +1499,14 @@ void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batc
    fGC += "clReleaseMemObject(bufferA);\n";
    fGC += "clReleaseMemObject(bufferC);\n";
    fGC += "clReleaseCommandQueue(queue);\n";
-   fGC += "clReleaseContext(context);\n";    
+   fGC += "clReleaseContext(context);\n";   
+   fGC += "std::vector<float> ret(C, C + " + length + "); \n";
+   fGC += "return ret; \n";
+   fGC += "} \n";
+   fGC += "}; \n";
+   fGC += "} \n";
+   fGC += "#endif \n";
+
 }
 
 

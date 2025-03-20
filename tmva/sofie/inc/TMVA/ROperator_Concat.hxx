@@ -259,6 +259,14 @@
 
             return out.str();
          }
+
+         // std::string GenerateGPUOpenCL(std::string OpName) override {
+         //    return "";
+         // }
+
+         // std::string GetLength() override {
+         //    return "";
+         // }
      };
  }//SOFIE
  }//Experimental

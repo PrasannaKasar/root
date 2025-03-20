@@ -143,12 +143,6 @@ public:
       Generate(static_cast<std::underlying_type_t<Options>>(options), batchSize, pos, verbose);
    }
 
-   void GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batchSize = -1, long pos = 0, bool verbose = false);
-   void GenerateGPUOpenCL(Options options = Options::kDefault, int batchSize = -1, int pos = 0, bool verbose = false)
-   {
-      GenerateGPUOpenCL(static_cast<std::underlying_type_t<Options>>(options), batchSize, pos, verbose);
-   }
-
    // generate the infer function signature. If isdecl= false generate the calling infer function
    // used to infer the sub-graphs
    std::string GenerateInferSignature(bool isdecl = true);
@@ -206,6 +200,12 @@ public:
    void HeadInitializedTensors(std::string name, int n_print = 50);
 
    bool UseSession() const { return fUseSession; }
+
+   void GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batchSize = -1, long pos = 0, bool verbose = false);
+   void GenerateGPUOpenCL(Options options = Options::kDefault, int batchSize = -1, int pos = 0, bool verbose = false)
+   {
+      GenerateGPUOpenCL(static_cast<std::underlying_type_t<Options>>(options), batchSize, pos, verbose);
+   }
 
    // Use the ClassDef macro to allow definition of custom streaming
    ClassDefNV(RModel, 3);
