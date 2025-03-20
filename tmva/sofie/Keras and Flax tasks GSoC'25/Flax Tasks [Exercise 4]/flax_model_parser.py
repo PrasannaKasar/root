@@ -13,7 +13,6 @@ def get_model_config(model: nnx.Module) -> dict:
         - Layer information (name, type, input/output dimensions, number of parameters, data type)
         - Total number of parameters in the model
     '''
-
     # Initialize a dictionary to store the overall model configuration
     model_config = {}
 
@@ -80,13 +79,10 @@ def get_model_config(model: nnx.Module) -> dict:
 
     # Start the recursion by passing the model's base layer information dictionary and model object
     helper(model_config['layer information'], model)
-
     # Calculate the total number of parameters used in the model
     total_number_of_params = sum(layer_param_counts)
-    
     # Store the total number of parameters in the model configuration
     model_config['Total number of parameters'] = total_number_of_params
-    
     # Return the final model configuration
     return model_config
 

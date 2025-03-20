@@ -16,7 +16,7 @@ using namespace TMVA::Experimental;
 
 void parse_onnx(std::string inputFile = ""){
    if (inputFile.empty() )
-      inputFile = "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Linear_16.onnx";
+      inputFile = "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/Tanh.onnx";
 
     //   std::printf("2");
 
@@ -29,29 +29,29 @@ void parse_onnx(std::string inputFile = ""){
     // write the code in a file (by default Linear_16.hxx and Linear_16.dat
     model.OutputGenerated();
 
-    //Printing required input tensors
-    model.PrintRequiredInputTensors();
+    // //Printing required input tensors
+    // model.PrintRequiredInputTensors();
 
-    //Printing initialized tensors (weights)
-    std::cout<<"\n\n";
-    model.PrintInitializedTensors();
+    // //Printing initialized tensors (weights)
+    // std::cout<<"\n\n";
+    // model.PrintInitializedTensors();
 
-    //Printing intermediate tensors
-    std::cout<<"\n\n";
-    model.PrintIntermediateTensors();
+    // //Printing intermediate tensors
+    // std::cout<<"\n\n";
+    // model.PrintIntermediateTensors();
 
-    //Checking if tensor already exist in model
-    std::cout<<"\n\nTensor \"16weight\" already exist: "<<std::boolalpha<<model.CheckIfTensorAlreadyExist("16weight")<<"\n\n";
-    std::vector<size_t> tensorShape = model.GetTensorShape("16weight");
-    std::cout<<"Shape of tensor \"16weight\": ";
-    for(auto& it:tensorShape){
-        std::cout<<it<<",";
-    }
-    std::cout<<"\n\nData type of tensor \"16weight\": ";
-    SOFIE::ETensorType tensorType = model.GetTensorType("16weight");
-    std::cout<<SOFIE::ConvertTypeToString(tensorType);
+    // //Checking if tensor already exist in model
+    // std::cout<<"\n\nTensor \"16weight\" already exist: "<<std::boolalpha<<model.CheckIfTensorAlreadyExist("16weight")<<"\n\n";
+    // std::vector<size_t> tensorShape = model.GetTensorShape("16weight");
+    // std::cout<<"Shape of tensor \"16weight\": ";
+    // for(auto& it:tensorShape){
+    //     std::cout<<it<<",";
+    // }
+    // std::cout<<"\n\nData type of tensor \"16weight\": ";
+    // SOFIE::ETensorType tensorType = model.GetTensorType("16weight");
+    // std::cout<<SOFIE::ConvertTypeToString(tensorType);
 
-    //Printing generated inference code
-    std::cout<<"\n\n";
-    model.PrintGenerated();
+    // //Printing generated inference code
+    // std::cout<<"\n\n";
+    // model.PrintGenerated();
 }
