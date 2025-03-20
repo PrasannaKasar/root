@@ -159,14 +159,14 @@ private:
    /// The cluster pool asynchronously preloads the next few clusters
    std::unique_ptr<RClusterPool> fClusterPool;
 
-   RNTupleDescriptorBuilder fDescriptorBuilder;
+   ROOT::Internal::RNTupleDescriptorBuilder fDescriptorBuilder;
 
    ROOT::Internal::RPageRef
    LoadPageImpl(ColumnHandle_t columnHandle, const RClusterInfo &clusterInfo, ROOT::NTupleSize_t idxInCluster) final;
 
 protected:
    void LoadStructureImpl() final {}
-   RNTupleDescriptor AttachImpl(RNTupleSerializer::EDescriptorDeserializeMode mode) final;
+   ROOT::RNTupleDescriptor AttachImpl(RNTupleSerializer::EDescriptorDeserializeMode mode) final;
    /// The cloned page source creates a new connection to the pool/container.
    std::unique_ptr<RPageSource> CloneImpl() const final;
 
