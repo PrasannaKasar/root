@@ -330,7 +330,7 @@ constexpr float DEFAULT_TOLERANCE = 1e-3f;
 
 TEST(ONNX, Tanh_OpenCL)
 {
-   std::cout << "lkslkdn \n";
+   std::cout << "Testing Tanh Operator \n";
 
    constexpr float TOLERANCE = DEFAULT_TOLERANCE;
 
