@@ -88,4 +88,5 @@ def get_model_config(model: nnx.Module) -> dict:
 
 # Print the model configuration
 model_config = get_model_config(model)
+
 pprint(model_config)
