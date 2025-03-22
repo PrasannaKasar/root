@@ -4,4 +4,4 @@ namespace Tanh_ExpectedOutputGPU{
         0.9212,  0.8826, -0.2081, -0.5976, -0.4675, -0.9727, -0.6099,  0.8229,
         0.8739,  0.6714,  0.9373, -0.6982, -0.1946,  0.0411, -0.5125, -0.2464 
 	};
-} // namespace Tanh_ExpectedOutput
+} // namespace Tanh_ExpectedOutputGPU
