@@ -348,6 +348,7 @@ namespace SOFIE{
                throw std::runtime_error("TMVA SOFIE Gemm Op " + opName + " Bias tensor is not present but beta value in Gemm is not zero");
             }
          }
+<<<<<<< HEAD
 
          // include MatMul case where we stack the Gemm operations
          // exclude case where we have only 1's in the additional dims
@@ -510,12 +511,60 @@ namespace SOFIE{
             out << "\n";
             out << SP << "std::vector<float> ret(tensor_" << fNY << ", tensor_" << fNY << " + " << lengthGemm << "); \n";
             out << SP << "return ret; \n";
+=======
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
 
+         // include MatMul case where we stack the Gemm operations
+         // exclude case where we have only 1's in the additional dims
+         bool doStackMul = dimY > 2 && ( fIsDynamic  || std::stoi(lengthExtra) > 1);
+         if (doStackMul) {
+            out << SP << "size_t " << opName << "_yoffset = 0;\n"; // needed if we stack the gemm operations
+            out << SP << "for (int i = 0; i < " << lengthExtra << "; i++){\n";
+            out << SP;
+         }
+         // in the case of bias
+         if (!fNC.empty()){
+            out << SP << "std::copy(" << "tensor_" << fNC2 << ", " << "tensor_" << fNC2 << " + " << lengthGemm << ", "
+               << "tensor_" << fNY;
+            if (doStackMul) out << " + " << opName << "_yoffset";
+            out << ");\n";
+         }
+
+<<<<<<< HEAD
+         return out.str();
+      }
+
+=======
+
+         if (fType == "float"){
+
+            out << SP << "BLAS::sgemm_(&" << opName << "_transB, &" << opName << "_transA, &" << opName
+             << "_n, &" << opName << "_m, &" << opName << "_k, &" << opName << "_alpha, " << "tensor_" << fNB
+             << ", &" << opName << "_ldb, " << "tensor_" << fNA << ", &" << opName << "_lda, &" << opName << "_beta, "
+             << "tensor_" << fNY;
+             if (doStackMul) out << " + " << opName << "_yoffset";
+             out << ", &" << opName << "_n);\n";
+
+            if(fActivation == EActivationType::RELU){
+               out << SP << "for (int id = 0; id < " << TMVA::Experimental::SOFIE::ConvertDynamicShapeToLength(fShapeY) << " ; id++){\n";
+               out << SP << SP << "tensor_" << fNY << "[id] = ((tensor_" << fNY << "[id] > 0 )? tensor_" << fNY << "[id] : 0);\n";
+               out << SP << "}\n";
+            }
+         }
+
+         if (doStackMul) {
+            out << SP << SP <<  opName << "_yoffset += " << lengthGemm << ";\n";
+            out << "}\n"; // end of loop on the stacked multiplications
          }
 
          return out.str();
       }
 
+      // std::string GenerateGPUOpenCL(std::string OpName) override {
+      //    return "";
+      // }
+
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
       // std::string GetLength() override {
       //    return "";
       // }

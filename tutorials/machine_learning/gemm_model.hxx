@@ -32,7 +32,7 @@ Session(std::string filename ="gemm_model.dat") {
 std::vector<float> infer(float* tensor_A,float* tensor_B,float* tensor_C){
 
 //--------- Gemm
-   printf("\nInfering Gemm operator on OpenCL...");
+   printf("\nInfering Gemm operator on OpenCL...\n");
    char op_0_transA = 'n';
    char op_0_transB = 'n';
    int op_0_m = 4;

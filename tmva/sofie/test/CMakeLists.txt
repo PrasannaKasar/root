@@ -64,7 +64,11 @@ if (tmva-cpu)  # we need BLAS for compiling the models
 ROOT_ADD_GTEST(TestCustomModelsFromONNX TestCustomModelsFromONNX.cxx
   LIBRARIES
     ROOTTMVASofie
+<<<<<<< HEAD
     -lOpenCL -lclBLAS
+=======
+    -lOpenCL 
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
     ${BLAS_LINKER_FLAGS}
     ${BLAS_LIBRARIES}
   INCLUDE_DIRS

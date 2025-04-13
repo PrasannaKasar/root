@@ -63,6 +63,11 @@ public:
       return out.str();
    }
 
+<<<<<<< HEAD
+=======
+   
+
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
    std::vector<std::string> GetStdLibs() override { return { std::string("cmath") };}
 };
 

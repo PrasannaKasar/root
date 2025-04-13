@@ -69,7 +69,10 @@ public:
    }
 
    std::string GenerateGPUOpenCL(std::string OpName) override {
+<<<<<<< HEAD
 
+=======
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
       OpName = "Tanh";
   
       if (fShape.empty()) {
@@ -86,6 +89,7 @@ public:
       out << "\"  if (id < " << length << ") {\\n\"\n";
       out << "\"    C[id] = tanh(A[id]);\\n\"\n";
       out << "\"  }\\n\"\n";
+<<<<<<< HEAD
       out << "\"}\";\n\n";
       
       out << "cl_int err;\n";
@@ -197,6 +201,9 @@ public:
       
       out << "std::vector<float> ret(tensor_1, tensor_1 + " << length << ");\n";
       out << "return ret;\n";   
+=======
+      out << "\"}\";\n";
+>>>>>>> f44ce677aece7a630320de501395b241833bc179
   
       return out.str();
   } 
