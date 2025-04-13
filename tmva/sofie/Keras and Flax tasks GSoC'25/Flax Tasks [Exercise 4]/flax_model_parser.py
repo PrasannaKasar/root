@@ -73,12 +73,8 @@ def get_model_config(model: nnx.Module) -> dict:
                         layer_param_counts.append(layer_param_count)
 
                         layer_dict[layer_name]['number of parameters'] = layer_param_count
-
-<<<<<<< HEAD
-                        # Store the data tblackwell nvidiaype of the parameters in the layer
-=======
+                        
                         # Store the data type of the parameters in the layer
->>>>>>> f44ce677aece7a630320de501395b241833bc179
                         layer_dict[layer_name]['dtype'] = str(param.value.dtype)
 
     # Start the recursion by passing the model's base layer information dictionary and model object

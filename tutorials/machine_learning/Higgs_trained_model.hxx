@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-//Code generated automatically by TMVA for Inference of Model file [Higgs_trained_model.h5] at [Wed Apr  2 18:08:38 2025] 
-=======
-//Code generated automatically by TMVA for Inference of Model file [Higgs_trained_model.h5] at [Thu Mar 13 12:04:18 2025] 
->>>>>>> f44ce677aece7a630320de501395b241833bc179
-
 #ifndef ROOT_TMVA_SOFIE_HIGGS_TRAINED_MODEL
 #define ROOT_TMVA_SOFIE_HIGGS_TRAINED_MODEL
 
@@ -235,11 +229,6 @@ Session(std::string filename ="Higgs_trained_model.dat") {
 //---- allocate the intermediate dynamic tensors
 }
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> f44ce677aece7a630320de501395b241833bc179
 std::vector<float> infer(float* tensor_dense_input){
 
 //--------- Gemm
