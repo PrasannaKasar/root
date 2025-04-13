@@ -1346,167 +1346,177 @@ void RModel::Streamer(TBuffer &R__b) {
 }
 
 void RModel::GenerateGPUOpenCL(std::underlying_type_t<Options> options, int batchSize, long pos, bool verbose) {
+
+   fOperators[0]->Initialize(*this);
+
    std::string hgname = fName;
    std::transform(hgname.begin(), hgname.end(), hgname.begin(), [](unsigned char c) {
-                       return std::toupper(c);
-   } );
+                       return std::toupper(c);});
+
    fGC += "#ifndef ROOT_TMVA_SOFIE_" + hgname + "_GPU \n";
-   fGC += "#define ROOT_TMVA_SOFIE_" + hgname + "_GPU \n";
+   fGC += "#define ROOT_TMVA_SOFIE_" + hgname + "_GPU \n"; 
    fGC += "\n";
+
    fGC += "#include <cmath> \n";
    fGC += "#include <vector> \n";
    fGC += "#include \"TMVA/SOFIE_common.hxx\" \n";
-   fGC += "#include <CL/cl.h>\n";
-   fGC += "#include <stdio.h>\n";
-   fGC += "#include <stdlib.h>\n";
-   fGC += "#include <math.h>\n";
-   fGC += "\n";
-   fGC += "namespace TMVA_SOFIE_" + fName + "_GPU { \n";
-   fGC += "struct Session { \n";
-   fGC += "\n";
-   fGC += "// kernel source function \n";
-   fGC += "\n";
-   fOperators[0]->Initialize(*this);
-   fGC += (fOperators[0]->GenerateGPUOpenCL(std::to_string(0)));
-   // fGC += (fOperators[i]->Generate(std::to_string(i)));
-   std::string length = fOperators[0]->GetLength();
-   fGC += ("#define VECTOR_SIZE " + length);
-   fGC += "\n";
-   fGC += "char* fIntermediateMemoryPool = new char[" + length + "*4" + "]; \n";
-   fGC += "float* C = reinterpret_cast<float*>(fIntermediateMemoryPool + 0); \n";
-   fGC += "\n";
-   fGC += "Session(std::string = \"\") { \n";
-   fGC += "  //---- allocate the intermediate dynamic tensors \n";
-   fGC += "} \n";
-   fGC += "std::vector<float> infer(float* tensor_input) { \n";
-   fGC += "float* A = tensor_input; \n";
-   fGC += "\n";
-   fGC += "cl_int err;\n";
-   fGC += "cl_uint numPlatforms;\n";
-   fGC += "err = clGetPlatformIDs(0, NULL, &numPlatforms);\n";
-   fGC += "if (err != CL_SUCCESS || numPlatforms == 0) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to find any OpenCL platforms. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "cl_platform_id *platforms = (cl_platform_id *)malloc(numPlatforms * sizeof(cl_platform_id));\n";
-   fGC += "err = clGetPlatformIDs(numPlatforms, platforms, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to get OpenCL platform IDs. Error code %d\\n\", err);\n";
-   fGC += "   free(platforms);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "// Use the first available platform\n";
-   fGC += "cl_platform_id platform = platforms[0];\n";
-   fGC += "free(platforms);\n";
-   fGC += "\n";
-   fGC += "cl_device_id device;\n";
-   fGC += "err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to get an OpenCL device. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to create a context. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Use clCreateCommandQueueWithProperties instead of deprecated clCreateCommandQueue\n";
-   fGC += "cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, &err);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to create a command queue. Error code %d\\n\", err);\n";
-   fGC += "   clReleaseContext(context);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Create buffers\n";
-   fGC += "cl_mem bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY, VECTOR_SIZE * sizeof(float), NULL, &err);\n";
-   fGC += "cl_mem bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, VECTOR_SIZE * sizeof(float), NULL, &err);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to create buffers. Error code %d\\n\", err);\n";
-   fGC += "   clReleaseCommandQueue(queue);\n";
-   fGC += "   clReleaseContext(context);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Write data to device buffers\n";
-   fGC += "err = clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), A, 0, NULL, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to write to bufferA. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "// Create and build program\n";
-   fGC += "cl_program program = clCreateProgramWithSource(context, 1, &kernelSource, NULL, &err);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to create program. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   // Retrieve and print the build log\n";
-   fGC += "   size_t log_size;\n";
-   fGC += "   clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);\n";
-   fGC += "   char *log = (char *)malloc(log_size);\n";
-   fGC += "   clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to build program. Build log:\\n%s\\n\", log);\n";
-   fGC += "   free(log);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Create kernel\n";
-   fGC += "   std::string kernelName = \"" + fName + "\"; \n";
-   fGC += "cl_kernel kernel = clCreateKernel(program, kernelName.c_str(), &err); \n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to create kernel. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Set kernel arguments\n";
-   fGC += "err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);\n";
-   fGC += "err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferC);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to set kernel arguments. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Enqueue kernel execution\n";
-   fGC += "size_t globalSize = VECTOR_SIZE;\n";
-   fGC += "err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to enqueue kernel. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   fGC += "// Ensure that all operations are complete\n";
-   fGC += "clFinish(queue);\n";
-   fGC += "\n";
-   fGC += "// Read back the results from device memory\n";
-   fGC += "err = clEnqueueReadBuffer(queue, bufferC, CL_TRUE, 0, VECTOR_SIZE * sizeof(float), C, 0, NULL, NULL);\n";
-   fGC += "if (err != CL_SUCCESS) {\n";
-   fGC += "   fprintf(stderr, \"Error: Failed to read bufferC. Error code %d\\n\", err);\n";
-   fGC += "   return std::vector<float> {};\n";
-   fGC += "}\n";
-   fGC += "\n";
-   // fGC += "// Print the first 10 results\n";
-   // fGC += "// for (int i = 0; i < 10; i++) {\n";
-   // fGC += "//     printf(\"C[%d] = %f\\n\", i, C[i]);\n";
-   // fGC += "// }\n";
-   fGC += "\n";
-   fGC += "// Cleanup\n";
-   fGC += "clReleaseKernel(kernel);\n";
-   fGC += "clReleaseProgram(program);\n";
-   fGC += "clReleaseMemObject(bufferA);\n";
-   fGC += "clReleaseMemObject(bufferC);\n";
-   fGC += "clReleaseCommandQueue(queue);\n";
-   fGC += "clReleaseContext(context);\n";   
-   fGC += "std::vector<float> ret(C, C + " + length + "); \n";
-   fGC += "return ret; \n";
-   fGC += "} \n";
-   fGC += "}; \n";
+   fGC += "#include <stdio.h> \n";
+   fGC += "#include <stdlib.h> \n";
+   fGC += "#include <math.h> \n";
+   
+   fGC += "#include <CL/cl.h> \n";
+   fGC += "#include <clBLAS.h> \n";
+
+   fGC += "\nnamespace TMVA_SOFIE_" + fName + "_GPU { \n";
+
+   // define the Session struct (for GNN this is generated in RModel_GNN)
+   if (fUseSession && !fIsGNNComponent) {
+      if (!fIsSubGraph)
+         fGC += "struct Session {\n";
+      else
+         fGC += "struct Session_" + fName + " {\n";
+   }
+
+   // generate code for declaring the initialized tensors
+   GenerateInitializedTensorInfo();
+
+   // evaluate total intermediate memory and position intermediate tensor addresses
+   std::string intermediate_memory_alloc_string = "";
+   intermediate_memory_alloc_string += "\n// --- Positioning intermediate tensor memory --";
+   for (size_t op_idx = 0; op_idx < fOperators.size(); ++op_idx) {
+      intermediate_memory_alloc_string += AllocateIntermediateMemory(fOperators[op_idx]->GetOpOutputTensors());
+      CheckAndFlushIntermediateMemory(fOperators[op_idx]->GetOpInputTensors(), op_idx);
+   }
+
+   // to check remaining unused fragments after memory allocation (lesser the better)
+   // for (const auto &it: fIntermediateMemoryInfo.available_stack){
+   //    std::cout<<"chunk_idx: "<<it.first<<", chunk_size: "<<it.second<<"\n";
+   // }
+
+   // generate the memory pool to be used by intermediate tensors
+   GenerateIntermediateMemoryPool();
+
+   // position intermediate tensors
+   fGC += intermediate_memory_alloc_string;
+
+   // generate the declaring the intermediate tensors
+   GenerateIntermediateTensorInfo();
+   // generate code for declarations of some specific operators
+   GenerateOperatorDeclarations();
+
+   // add subgraph session
+   if (!fSubGraphs.empty()) fGC += "//   subgraph sessions\n";
+   for (auto & graph : fSubGraphs) {
+      fGC += "Session_" + graph->fName + "  fSession_" + graph->fName + ";\n";
+   }
+
+   // Generate code for Session constructor
+   if (fUseSession) {
+      std::string sessionName = "Session";
+      if (fIsSubGraph)
+         sessionName += "_" + fName;
+      // add here specific operator code that needs to define session data members
+      fGC += "\n";
+      for (size_t id = 0; id < fOperators.size(); id++) {
+         std::string opName = std::to_string(id);
+         fGC += fOperators[id]->GenerateSessionMembersCode(opName);
+      }
+      fGC += "\n";
+      // here add initialization and reading of weight tensors
+      if (fUseWeightFile) {
+         std::string fileName = fName;
+         if (fWeightFile == WeightFileType::Text) {
+            fileName += ".dat";
+         }
+         if (fWeightFile == WeightFileType::RootBinary) {
+            fileName += ".root";
+         }
+         fGC += sessionName + "(std::string filename =\"" + fileName + "\"";
+      } else {
+         // no need to pass weight file since it is not used
+         // keep passing a string for compatibility
+         fGC += sessionName + "(std::string = \"\"";
+      }
+      // add initialization of shape parameters
+      // assume all parameters are of type size_t
+      if (!fShapeParams.empty()) {
+         for (auto &p : fShapeParams) {
+            fGC += ",\n";
+            fGC += "        size_t " + p.first + " = " + p.second;
+         }
+      }
+      fGC += ") {\n";
+
+      if (fUseWeightFile) {
+         fGC += "\n//--- reading weights from file\n";
+         ReadInitializedTensorsFromFile(fReadPos);
+         fGC += "\n";
+         // fUseWeightFile = fUseWeightFile;
+      }
+
+      // now we have passed the parameters we can allocate the dynamic tensors
+      GenerateDynamicTensorInfo();
+
+      // add here initialization code  for operator
+      for (size_t id = 0; id < fOperators.size(); id++) {
+         fGC += fOperators[id]->GenerateInitCode();
+      }
+
+      fGC += "}\n\n";
+   }
+   // generate the inference code
+   if (fVerbose)
+      std::cout << "Generating main inference code for " << fName << std::endl;
+
+   size_t outputSize = fOutputTensorNames.size();
+   // assume output types are all the same
+   if (outputSize == 0)
+      throw std::runtime_error("TMVA-SOFIE: output size=0 are not supported");
+
+   std::string outputType;
+   bool sameOutputTypes = true;
+   std::string inferReturnType; // type return by infer function
+   ETensorType eOutputType;
+   eOutputType = GetTensorType(*fOutputTensorNames.begin());
+   outputType = ConvertTypeToString(eOutputType);
+   fGC += "\n\n";
+   if (outputSize == 1) {
+      fGC += "std::vector<" + outputType + ">";
+   } else {
+      // if all output types are the same we return an std::vector - otherwise a tuple
+      for (size_t i = 1; i < outputSize; i++) {
+         if (GetTensorType(fOutputTensorNames[i]) != eOutputType)
+            sameOutputTypes = false;
+      }
+      if (sameOutputTypes)
+         fGC += "std::vector<std::vector<" + outputType + ">>";
+      else {
+         inferReturnType = "std::tuple<";
+         for (size_t i = 0; i < outputSize; i++) {
+            inferReturnType += "std::vector<" + ConvertTypeToString(GetTensorType(fOutputTensorNames[i])) + ">";
+            if (i < outputSize-1) inferReturnType += ",";
+         }
+         inferReturnType += ">";
+         fGC += inferReturnType;
+      }
+   }
+
+   fGC += " infer(";
+
+   fGC += GenerateInferSignature();
+
+   fGC += "){\n";
+
+   fGC += fOperators[0] -> GenerateGPUOpenCL(std::to_string(0));
+
+   fGC += "}\n";  // end of infer function scope
+
+   // end of session
+   if (fUseSession && !fIsGNNComponent) {
+      fGC += "};   // end of Session\n";
+   }  
    fGC += "} \n";
    fGC += "#endif \n";
-
 }
 
 

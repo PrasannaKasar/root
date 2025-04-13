@@ -69,6 +69,7 @@ public:
    }
 
    std::string GenerateGPUOpenCL(std::string OpName) override {
+
       OpName = "Tanh";
   
       if (fShape.empty()) {
@@ -85,7 +86,117 @@ public:
       out << "\"  if (id < " << length << ") {\\n\"\n";
       out << "\"    C[id] = tanh(A[id]);\\n\"\n";
       out << "\"  }\\n\"\n";
-      out << "\"}\";\n";
+      out << "\"}\";\n\n";
+      
+      out << "cl_int err;\n";
+      out << "cl_uint numPlatforms;\n";
+      out << "err = clGetPlatformIDs(0, NULL, &numPlatforms);\n";
+      out << "if (err != CL_SUCCESS || numPlatforms == 0) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to find any OpenCL platforms. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_platform_id* platforms = (cl_platform_id*)malloc(numPlatforms * sizeof(cl_platform_id));\n";
+      out << "err = clGetPlatformIDs(numPlatforms, platforms, NULL);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to get OpenCL platform IDs. Error code %d\\n\", err);\n";
+      out << "  free(platforms);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_platform_id platform = platforms[0];\n";
+      out << "free(platforms);\n";
+      
+      out << "cl_device_id device;\n";
+      out << "err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to get an OpenCL device. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to create a context. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, &err);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to create a command queue. Error code %d\\n\", err);\n";
+      out << "  clReleaseContext(context);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_mem bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY, " << length << " * sizeof(float), NULL, &err);\n";
+      out << "cl_mem bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, " << length << " * sizeof(float), NULL, &err);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to create buffers. Error code %d\\n\", err);\n";
+      out << "  clReleaseCommandQueue(queue);\n";
+      out << "  clReleaseContext(context);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_event transfer1;\n";
+      out << "err = clEnqueueWriteBuffer(queue, bufferA, CL_TRUE, 0, " << length << " * sizeof(float), tensor_onnxTanh_0, 0, NULL, &transfer1);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to write to bufferA. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_program program = clCreateProgramWithSource(context, 1, &kernelSource, NULL, &err);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to create program. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  size_t log_size;\n";
+      out << "  clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);\n";
+      out << "  char* log = (char*)malloc(log_size);\n";
+      out << "  clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);\n";
+      out << "  fprintf(stderr, \"Error: Failed to build program. Build log:\\n%s\\n\", log);\n";
+      out << "  free(log);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "cl_kernel kernel = clCreateKernel(program, \"" << OpName << "\", &err);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to create kernel. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);\n";
+      out << "err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferC);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to set kernel arguments. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "size_t globalSize = " << length << ";\n";
+      out << "err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, NULL, 0, NULL, NULL);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to enqueue kernel. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "clFinish(queue);\n";
+      
+      out << "err = clEnqueueReadBuffer(queue, bufferC, CL_TRUE, 0, " << length << " * sizeof(float), tensor_1, 0, NULL, NULL);\n";
+      out << "if (err != CL_SUCCESS) {\n";
+      out << "  fprintf(stderr, \"Error: Failed to read bufferC. Error code %d\\n\", err);\n";
+      out << "  return std::vector<float> {};\n";
+      out << "}\n";
+      
+      out << "clReleaseKernel(kernel);\n";
+      out << "clReleaseProgram(program);\n";
+      out << "clReleaseMemObject(bufferA);\n";
+      out << "clReleaseMemObject(bufferC);\n";
+      out << "clReleaseCommandQueue(queue);\n";
+      out << "clReleaseContext(context);\n";
+      
+      out << "std::vector<float> ret(tensor_1, tensor_1 + " << length << ");\n";
+      out << "return ret;\n";   
   
       return out.str();
   } 

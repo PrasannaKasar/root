@@ -324,13 +324,55 @@
 #include "/home/prasanna/RootDevelopment/root/tutorials/machine_learning/Tanh.hxx"
 #include "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/references/TanhGPU.ref.hxx"
 
+#include "/home/prasanna/RootDevelopment/root/tutorials/machine_learning/gemm_model.hxx"
+#include "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/references/GemmGPU.ref.hxx"
+
 #include "gtest/gtest.h"
 
 constexpr float DEFAULT_TOLERANCE = 1e-3f;
 
+TEST(ONNX, Gemm_OpenCL)
+{
+   std::cout << "Testing Gemm Operator on GPU \n";
+
+   constexpr float TOLERANCE = DEFAULT_TOLERANCE;
+
+   // Preparing the random input
+   std::vector<float> A({
+      0.5743, -0.9235, 0.1657, 1.4821, -0.2758, 0.9034, -1.1674, 0.7412, -0.5983, 0.3139, 
+      1.0872, -0.6821, 0.4379, -1.0456, -0.1784, 0.0567, 0.8982, -0.9823, 1.5678, -0.4235
+   });
+
+   std::vector<float> B({
+      0.5743, -0.9235, 0.1657, 1.4821, -0.2758, 0.9034, -1.1674, 0.7412, -0.5983, 0.3139, 
+      1.0872, -0.6821, 0.4379, -1.0456, -0.1784, 0.0567, 0.8982, -0.9823, 1.5678, -0.4235, 
+      -0.2945, 0.8751, 1.3594, -1.2136, 0.7419, -0.5612, 0.4342, 1.2394, -0.8360, 0.6573
+   });
+
+   std::vector<float> C({
+     -0.3896, -0.3521,  0.0363,  1.0962,  0.5085, -0.8523, -0.6766,  0.2421,
+      1.5971,  1.3873, -0.2112, -0.6895, -0.5069, -2.1395, -0.7087,  1.1658,
+      1.3493,  0.8132,  1.7156, -0.8637, -0.1971,  0.0411, -0.5662, -0.2516
+   });
+
+   TMVA_SOFIE_gemm_model_GPU::Session s("Gemm_FromONNX.dat");
+
+   std::vector<float> output = s.infer(A.data(), B.data(), C.data());
+
+   // Checking output size
+   EXPECT_EQ(output.size(), sizeof(Gemm_ExpectedOutputGPU::outputs) / sizeof(float));
+
+   float *correct = Gemm_ExpectedOutputGPU::outputs;
+
+   // Checking every output value, one by one
+   for (size_t i = 0; i < output.size(); ++i) {
+      EXPECT_LE(std::abs(output[i] - correct[i]), TOLERANCE);
+   }
+}
+
 TEST(ONNX, Tanh_OpenCL)
 {
-   std::cout << "Testing Tanh Operator \n";
+   std::cout << "Testing Tanh Operator on GPU \n";
 
    constexpr float TOLERANCE = DEFAULT_TOLERANCE;
 

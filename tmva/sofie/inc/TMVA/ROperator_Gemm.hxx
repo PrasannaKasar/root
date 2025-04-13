@@ -390,9 +390,131 @@ namespace SOFIE{
          return out.str();
       }
 
-      // std::string GenerateGPUOpenCL(std::string OpName) override {
-      //    return "";
-      // }
+      std::string GenerateGPUOpenCL(std::string opName) override {
+         opName = "op_" + opName;
+
+         if (fShapeA.empty() || fShapeB.empty() || fShapeY.empty() || (fNC != "" && fShapeC.empty())) {
+            throw std::runtime_error("TMVA SOFIE Gemm Op called to Generate without being initialized first");
+         }
+         std::stringstream out;
+         out << "\n//--------- Gemm\n";
+         out << SP << "char " << opName << "_transA = " << (fAttrTransA ? "\'t\'" : "\'n\'") << ";\n";
+         out << SP << "char " << opName << "_transB = " << (fAttrTransB ? "\'t\'" : "\'n\'") << ";\n";
+         // need to consider case A and B have dim > 2 (for MatMul)
+         int64_t dimA = fShapeA.size();
+         int64_t dimB = fShapeB.size();
+         int64_t dimY = fShapeY.size();
+         if (dimA != dimB || dimA != dimY) {
+             throw std::runtime_error("TMVA SOFIE Gemm(MatMul) has invalid shape for inputs or output");
+         }
+         auto m = (fAttrTransA ? fShapeA[dimA-1].GetVal() : fShapeA[dimA-2].GetVal());
+         auto n = (fAttrTransB ? fShapeB[dimB-2].GetVal() : fShapeB[dimB-1].GetVal());
+         auto k = (fAttrTransA ? fShapeA[dimA-2].GetVal() : fShapeA[dimA-1].GetVal());
+         std::vector<Dim> sY = {fShapeY[dimY-2], fShapeY[dimY-1]};
+         // extra dimensions in case of stacked MatMul
+         std::vector<Dim> sA;
+         for (int64_t i = 0; i < dimY-2; i++) {
+            sA.push_back(fShapeY[i]);
+         }
+         auto lengthGemm = ConvertDynamicShapeToLength(sY); // size of the Gemm operation
+         auto lengthExtra = ConvertDynamicShapeToLength(sA); // extra length in case input tensors are of dim>2 (MatMul)
+
+         out << SP << "int " << opName << "_m = " << m << ";\n";
+         out << SP << "int " << opName << "_n = " << n << ";\n";
+         out << SP << "int " << opName << "_k = " << k << ";\n";
+         out << SP << "float " << opName << "_alpha = " << std::setprecision(std::numeric_limits<float>::max_digits10) << fAttrAlpha << ";\n";
+         out << SP << "float " << opName << "_beta = " << std::setprecision(std::numeric_limits<float>::max_digits10) << fAttrBeta << ";\n";
+         out << SP << "int " << opName << "_lda = " << (fAttrTransA ? m : k) << ";\n";
+         out << SP << "int " << opName << "_ldb = " << (fAttrTransB ? k : n) << ";\n";
+
+         // case bias is present
+         if (!fNC.empty()){
+            if (fNC2 == fNC) {
+               // add a check in case broadcasting was not needed or done outside of session
+               // C should have smaller dimension of Y
+               if (!fIsDynamic) {
+                  if (std::stoi(lengthGemm) != static_cast<int>(ConvertShapeToLength(fShapeC)))
+                     throw std::runtime_error("TMVA SOFIE Gemm Op " + opName + " Bias tensor has not correct size "
+                            + ConvertShapeToString(fShapeC) + " output length " + lengthGemm);
+               } else {
+                  // add a dynamic check (C should not be a dynamic tensor)
+                  out << SP << "assert(" << lengthGemm << " != " <<  ConvertShapeToLength(fShapeC) << ");\n";
+               }
+            }
+         } else {
+            //in this case fAttrBeta needs to be equal to zero otherwise second time we run we will use
+            // the previous result
+            if (fAttrBeta != 0) {
+               throw std::runtime_error("TMVA SOFIE Gemm Op " + opName + " Bias tensor is not present but beta value in Gemm is not zero");
+            }
+         }
+
+         // include MatMul case where we stack the Gemm operations
+         // exclude case where we have only 1's in the additional dims
+         bool doStackMul = dimY > 2 && ( fIsDynamic  || std::stoi(lengthExtra) > 1);
+         if (doStackMul) {
+            out << SP << "size_t " << opName << "_yoffset = 0;\n"; // needed if we stack the gemm operations
+            out << SP << "for (int i = 0; i < " << lengthExtra << "; i++){\n";
+            out << SP;
+         }
+         // in the case of bias
+         if (!fNC.empty()){
+            out << SP << "std::copy(" << "tensor_" << fNC2 << ", " << "tensor_" << fNC2 << " + " << lengthGemm << ", "
+               << "tensor_" << fNY;
+            if (doStackMul) out << " + " << opName << "_yoffset";
+            out << ");\n";
+         }
+
+
+         if (fType == "float"){
+
+            // Initialize OpenCL environment
+            out << SP << "cl_platform_id platform = NULL; \n";
+            out << SP << "cl_device_id device = NULL; \n";
+            out << SP << "cl_context context = NULL; \n";
+            out << SP << "cl_command_queue queue = NULL; \n";
+            out << SP << "cl_int err; \n";
+
+            out << SP << "err = clGetPlatformIDs(1, &platform, NULL); \n";
+            out << SP << "err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL); \n";
+            out << SP << "context = clCreateContext(NULL, 1, &device, NULL, NULL, &err); \n";
+            out << SP << "queue = clCreateCommandQueue(context, device, 0, &err); \n";
+
+            // Initialize clBLAS
+            out << SP << "err = clblasSetup(); \n";
+
+            out << SP << "cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY, " << m << " * " << k << " * sizeof(float), tensor_A, &err);\n";
+            out << SP << "cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY, " << k << " * " << n << " * sizeof(float), tensor_B, &err);\n";
+            out << SP << "cl_mem bufC = clCreateBuffer(context, CL_MEM_READ_ONLY, " << m << " * " << n << " * sizeof(float), tensor_" << fNY << ", &err);\n";
+
+            // Perform GEMM: C = alpha * A * B + beta * C
+            // M = Number of rows in matrices A and C
+            // N = Number of columns in matrices B and C
+            // K = Number of columns in matrix A and rows in matrix B
+            out << SP << "err = clblasSgemm(clblasRowMajor, clblasNoTrans, clblasNoTrans, " <<
+               m << ", " << n << ", " << k << ", op_0_alpha, bufA, 0, " << k << ", bufB, 0, " << n << ", " << 
+               "op_0_beta, bufC, 0, " << n << ", 1, &queue, 0, NULL, NULL); \n";
+
+            out << SP << "err = clFinish(queue); \n";
+
+            // Fetch results
+            out << SP << "err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, " << m << " * " << n << " * sizeof(float), tensor_" << fNY << " , 0, NULL, NULL); \n";
+
+            // Release OpenCL resources
+            out << SP << "clReleaseMemObject(bufA); \n"; 
+            out << SP << "clReleaseMemObject(bufB); \n";
+            out << SP << "clReleaseMemObject(bufC); \n";
+            out << SP << "clblasTeardown(); \n";
+            out << SP << "clReleaseCommandQueue(queue); \n";
+            out << SP << "clReleaseContext(context); \n";
+            out << "\n";
+            out << SP << "std::vector<float> ret(tensor_" << fNY << ", tensor_" << fNY << " + " << lengthGemm << "); \n";
+            out << SP << "return ret; \n";
+
+         }
+
+         return out.str();
+      }
 
       // std::string GetLength() override {
       //    return "";

@@ -63,8 +63,6 @@ public:
       return out.str();
    }
 
-   
-
    std::vector<std::string> GetStdLibs() override { return { std::string("cmath") };}
 };
 
