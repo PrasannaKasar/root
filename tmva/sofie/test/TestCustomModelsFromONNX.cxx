@@ -324,17 +324,13 @@
 #include "/home/prasanna/RootDevelopment/root/tutorials/machine_learning/Tanh.hxx"
 #include "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/references/TanhGPU.ref.hxx"
 
-<<<<<<< HEAD
 #include "/home/prasanna/RootDevelopment/root/tutorials/machine_learning/gemm_model.hxx"
 #include "/home/prasanna/RootDevelopment/root/tmva/sofie/test/input_models/references/GemmGPU.ref.hxx"
 
-=======
->>>>>>> f44ce677aece7a630320de501395b241833bc179
 #include "gtest/gtest.h"
 
 constexpr float DEFAULT_TOLERANCE = 1e-3f;
 
-<<<<<<< HEAD
 TEST(ONNX, Gemm_OpenCL)
 {
    std::cout << "Testing Gemm Operator on GPU \n";
@@ -377,11 +373,6 @@ TEST(ONNX, Gemm_OpenCL)
 TEST(ONNX, Tanh_OpenCL)
 {
    std::cout << "Testing Tanh Operator on GPU \n";
-=======
-TEST(ONNX, Tanh_OpenCL)
-{
-   std::cout << "Testing Tanh Operator \n";
->>>>>>> f44ce677aece7a630320de501395b241833bc179
 
    constexpr float TOLERANCE = DEFAULT_TOLERANCE;
 
