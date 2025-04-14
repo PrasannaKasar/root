@@ -62,11 +62,6 @@ public:
       out << SP << "}\n";
       return out.str();
    }
-   
-   std::string GetLength() override {
-      size_t length = ConvertShapeToLength(fShape);
-      return std::to_string(length); 
-   }
 
    std::string GenerateGPUOpenCL(std::string OpName) override {
 
